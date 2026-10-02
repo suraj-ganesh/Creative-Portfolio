@@ -74,6 +74,19 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+/** Request a theme change from anywhere (e.g. the contact dial module).
+ * Applies class + favicon + sessionStorage immediately and notifies the
+ * provider via event so React state stays in sync. */
+export function requestThemeMode(mode: ThemeMode) {
+  applyTheme(mode);
+  try {
+    sessionStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    /* ignore */
+  }
+  document.dispatchEvent(new CustomEvent<ThemeMode>("app:theme", { detail: mode }));
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>("base");
 
@@ -103,12 +116,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setMode = useCallback((m: ThemeMode) => {
     setModeState(m);
-    applyTheme(m);
-    try {
-      sessionStorage.setItem(STORAGE_KEY, m);
-    } catch {
-      /* ignore */
-    }
+    requestThemeMode(m);
+  }, []);
+
+  // Sync when something outside React (legacy hooks, dial module) requests a theme.
+  useEffect(() => {
+    const onExternal = (e: Event) => {
+      const m = (e as CustomEvent<ThemeMode>).detail;
+      if (isThemeMode(m)) setModeState(m);
+    };
+    document.addEventListener("app:theme", onExternal);
+    return () => document.removeEventListener("app:theme", onExternal);
   }, []);
 
   return (
