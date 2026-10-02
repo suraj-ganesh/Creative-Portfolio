@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import worksDataRaw from "@/data/works.json";
-
-interface WorkItem {
-  slug: string;
-  title: string;
-  description: string;
-  ogImage: string;
-  namespace: string;
-  html: string;
-}
-
-const worksData = worksDataRaw as Record<string, WorkItem>;
+import { projects } from "@/data/projects";
+import CaseStudyView from "@/components/works/CaseStudyView";
 
 export async function generateStaticParams() {
-  return Object.keys(worksData).map((slug) => ({ slug }));
+  return projects.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
@@ -23,17 +13,17 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const work = worksData[slug];
-  if (!work) {
+  const project = projects.find((p) => p.slug === slug);
+  if (!project) {
     return { title: "Work - bleibtgleich" };
   }
   return {
-    title: work.title,
-    description: work.description,
+    title: `${project.title} - bleibtgleich`,
+    description: project.description,
     openGraph: {
-      title: work.title,
-      description: work.description,
-      images: work.ogImage ? [{ url: work.ogImage }] : undefined,
+      title: `${project.title} - bleibtgleich`,
+      description: project.description,
+      images: project.coverImage ? [{ url: project.coverImage }] : undefined,
     },
   };
 }
@@ -44,17 +34,10 @@ export default async function WorkCasePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const work = worksData[slug];
-  if (!work) {
+  const project = projects.find((p) => p.slug === slug);
+  if (!project) {
     notFound();
   }
 
-  return (
-    <main
-      data-barba-namespace={work.namespace || slug}
-      data-barba="container"
-      className="transition-container"
-      dangerouslySetInnerHTML={{ __html: work.html }}
-    />
-  );
+  return <CaseStudyView project={project} />;
 }
