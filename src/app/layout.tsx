@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="w-mod-js">
+    <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.prod.website-files.com" />
         <link rel="icon" type="image/svg+xml" href="/favicons/favicon-mode_0.svg" />
