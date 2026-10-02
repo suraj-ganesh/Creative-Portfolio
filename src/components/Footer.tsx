@@ -1,4 +1,6 @@
 import { profile } from "@/data/profile";
+import { FooterHours, FooterMinutes } from "@/components/FooterClock";
+import FooterLogo from "@/components/FooterLogo";
 
 export default function Footer() {
   const materialsLogos = [
@@ -57,14 +59,10 @@ export default function Footer() {
             >
               (
             </h1>
-            <h1
-              data-footer-time="hours"
-              data-reveal="text"
+            <FooterHours
               id="w-node-_7ca5700c-b458-a30e-59bf-d4e05ebb478b-032bc8db"
               className="h1"
-            >
-              00
-            </h1>
+            />
             <h1
               data-reveal="text"
               id="w-node-be8336b7-b244-3f21-53f7-49695207e6e1-032bc8db"
@@ -76,35 +74,7 @@ export default function Footer() {
               id="w-node-f72de753-7ddd-b236-f650-3cfafb0e604b-032bc8db"
               className="footer-time-inner"
             >
-              <div
-                data-footer-logo="wrap"
-                data-reveal="clip-down"
-                className="footer-logo-cell"
-              >
-                <div className="footer-logo-list-wrap w-dyn-list">
-                  <div
-                    data-footer-logo="list"
-                    role="list"
-                    className="footer-logo-list w-dyn-items"
-                  >
-                    {materialsLogos.map((src, i) => (
-                      <div
-                        key={i}
-                        data-footer-logo="item"
-                        role="listitem"
-                        className="footer-logo-item w-dyn-item"
-                      >
-                        <img
-                          src={src}
-                          loading="lazy"
-                          alt=""
-                          className="img"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <FooterLogo logos={materialsLogos} />
             </div>
             <h1
               data-reveal="text"
@@ -113,14 +83,10 @@ export default function Footer() {
             >
               :
             </h1>
-            <h1
-              data-footer-time="minutes"
-              data-reveal="text"
+            <FooterMinutes
               id="w-node-_420f084b-ac62-c608-af37-250aeb96832a-032bc8db"
               className="h1"
-            >
-              00
-            </h1>
+            />
             <h1
               data-reveal="text"
               id="w-node-a3109718-9166-bfda-4238-04d33411177e-032bc8db"
