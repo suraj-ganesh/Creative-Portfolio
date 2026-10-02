@@ -1,8 +1,17 @@
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
+import { defaultOrbitCards } from "@/data/orbitTiles";
 
 export default function Hero() {
-  const featuredProjects = projects.filter((p) => p.featured).slice(0, 4);
+  const featured = projects.filter((p) => p.featured).slice(0, 4);
+  const orbitCards =
+    defaultOrbitCards.length > 0
+      ? defaultOrbitCards
+      : featured.map((p) => ({
+          title: p.title,
+          image: p.coverImage,
+          link: `/works/${p.slug}`,
+        }));
 
   return (
     <section className="intro">
@@ -241,18 +250,18 @@ export default function Hero() {
                 role="list"
                 className="orbit-tiles__list w-dyn-items"
               >
-                {featuredProjects.map((p, idx) => (
+                {orbitCards.map((card, idx) => (
                   <div
-                    key={p.slug || idx}
+                    key={card.title + idx}
                     data-orbit-tiles-item=""
                     role="listitem"
                     className="orbit-tiles__item w-dyn-item"
                   >
                     <div className="demo-card">
                       <img
-                        src={p.coverImage}
+                        src={card.image}
                         loading="lazy"
-                        alt={p.title}
+                        alt={card.title}
                         className="cover-image"
                       />
                     </div>
