@@ -13,8 +13,6 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main
-      data-barba-namespace="contact"
-      data-barba="container"
       className="transition-container"
     >
       <section className="preloader-wrap">

@@ -13,8 +13,6 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <main
-      data-barba-namespace="error-404"
-      data-barba="container"
       className="transition-container"
       dangerouslySetInnerHTML={{ __html: pagesData["404"].html }}
     />

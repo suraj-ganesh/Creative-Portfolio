@@ -14,8 +14,6 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main
-      data-barba-namespace="home"
-      data-barba="container"
       className="transition-container"
     >
       <Hero />

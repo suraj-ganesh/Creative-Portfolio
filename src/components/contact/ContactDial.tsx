@@ -1,4 +1,5 @@
 import { profile } from "@/data/profile";
+import DialThemeButton from "@/components/contact/DialThemeButton";
 
 export default function ContactDial() {
   return (
@@ -19,37 +20,22 @@ export default function ContactDial() {
         >
           {/* Item 1: Theme 1 */}
           <div data-contact-dial-item="theme" className="dial-item">
-            <div
-              data-haptic="medium"
-              data-theme-mode="1"
-              className="theme-switch-inner is-contect"
-            ></div>
+            <DialThemeButton mode="1" />
           </div>
 
           {/* Item 2: Theme 3 */}
           <div data-contact-dial-item="theme" className="dial-item">
-            <div
-              data-haptic="medium"
-              data-theme-mode="3"
-              className="theme-switch-inner is-contect"
-            ></div>
+            <DialThemeButton mode="3" />
           </div>
 
           {/* Item 3: Theme 2 */}
           <div data-contact-dial-item="theme" className="dial-item">
-            <div
-              data-haptic="medium"
-              data-theme-mode="2"
-              className="theme-switch-inner is-contect"
-            ></div>
+            <DialThemeButton mode="2" />
           </div>
 
           {/* Item 4: Theme Base */}
           <div data-contact-dial-item="theme" className="dial-item">
-            <div
-              data-theme-mode="base"
-              className="theme-switch-inner is-contect"
-            ></div>
+            <DialThemeButton mode="base" />
           </div>
 
           {/* Item 5: Email Link */}
@@ -82,11 +68,7 @@ export default function ContactDial() {
 
           {/* Item 6: Theme 4 */}
           <div data-contact-dial-item="theme" className="dial-item">
-            <div
-              data-haptic="medium"
-              data-theme-mode="4"
-              className="theme-switch-inner is-contect"
-            ></div>
+            <DialThemeButton mode="4" />
           </div>
 
           {/* Item 7: Instagram */}

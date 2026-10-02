@@ -14,8 +14,6 @@ export const metadata: Metadata = {
 export default function ArchivePage() {
   return (
     <main
-      data-barba-namespace="archive"
-      data-barba="container"
       className="transition-container"
       dangerouslySetInnerHTML={{ __html: pagesData.archive.html }}
     />

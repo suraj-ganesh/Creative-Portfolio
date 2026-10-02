@@ -20,8 +20,6 @@ export default function CaseStudyView({ project }: { project: Project }) {
   if (existingWork && existingWork.html) {
     return (
       <main
-        data-barba-namespace={project.slug}
-        data-barba="container"
         className="transition-container"
         dangerouslySetInnerHTML={{ __html: existingWork.html }}
       />
@@ -35,8 +33,6 @@ export default function CaseStudyView({ project }: { project: Project }) {
 
   return (
     <main
-      data-barba-namespace={project.slug}
-      data-barba="container"
       className="transition-container"
     >
       <section className="preloader-wrap">

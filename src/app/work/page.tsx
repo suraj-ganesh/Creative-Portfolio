@@ -11,8 +11,6 @@ export const metadata: Metadata = {
 export default function WorkPage() {
   return (
     <main
-      data-barba-namespace="works"
-      data-barba="container"
       className="transition-container"
     >
       <section className="preloader-wrap">

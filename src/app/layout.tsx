@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import GridWrap from "@/components/GridWrap";
 import StickyName from "@/components/StickyName";
 import CustomScrollbar from "@/components/CustomScrollbar";
 import { ThemeProvider } from "@/lib/theme";
+import SiteFx from "@/components/SiteFx";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -70,7 +70,7 @@ export default function RootLayout({
       </head>
       <body className="body">
         <ThemeProvider>
-        <div data-barba="wrapper" className="transition-wrapper">
+        <div className="transition-wrapper">
           <GridWrap />
           <Nav />
           {children}
@@ -79,11 +79,7 @@ export default function RootLayout({
         </div>
         </ThemeProvider>
 
-        {/* Site Bundle with GSAP, Webflow, Barba, Lenis, Three.js, and Slater */}
-        <Script
-          src="/js/site-bundle.js"
-          strategy="afterInteractive"
-        />
+        <SiteFx />
       </body>
     </html>
   );
