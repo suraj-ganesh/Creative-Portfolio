@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import GridWrap from "@/components/GridWrap";
 import StickyName from "@/components/StickyName";
 import CustomScrollbar from "@/components/CustomScrollbar";
+import { ThemeProvider } from "@/lib/theme";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -57,31 +58,18 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function () {
-                var faviconMap = {
-                  base: "/favicons/favicon-mode_0.svg",
-                  1: "/favicons/favicon-mode_1.svg",
-                  2: "/favicons/favicon-mode_2.svg",
-                  3: "/favicons/favicon-mode_3.svg",
-                  4: "/favicons/favicon-mode_4.svg",
-                };
-                var v = "base";
                 try {
-                  v = sessionStorage.getItem("theme-mode") || "base";
+                  var v = sessionStorage.getItem("theme-mode") || "base";
+                  var c = { base: "theme-mode-base", 1: "theme-mode-1", 2: "theme-mode-2", 3: "theme-mode-3", 4: "theme-mode-4" }[v] || "theme-mode-base";
+                  document.documentElement.classList.add(c);
                 } catch (e) {}
-                var href = faviconMap[v] || faviconMap.base;
-                var links = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"]');
-                for (var i = 0; i < links.length; i++) links[i].remove();
-                var l = document.createElement("link");
-                l.rel = "icon";
-                l.type = "image/svg+xml";
-                l.href = href;
-                document.head.appendChild(l);
               })();
             `,
           }}
         />
       </head>
       <body className="body">
+        <ThemeProvider>
         <div data-barba="wrapper" className="transition-wrapper">
           <GridWrap />
           <Nav />
@@ -89,6 +77,7 @@ export default function RootLayout({
           <StickyName />
           <CustomScrollbar />
         </div>
+        </ThemeProvider>
 
         {/* Site Bundle with GSAP, Webflow, Barba, Lenis, Three.js, and Slater */}
         <Script
