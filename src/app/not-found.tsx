@@ -7,17 +7,16 @@ const pagesData = pagesDataRaw as Record<
 >;
 
 export const metadata: Metadata = {
-  title: pagesData.home.title,
-  description: pagesData.home.description,
+  title: "404 Not Found - bleibtgleich",
 };
 
-export default function Home() {
+export default function NotFound() {
   return (
     <main
-      data-barba-namespace="home"
+      data-barba-namespace="error-404"
       data-barba="container"
       className="transition-container"
-      dangerouslySetInnerHTML={{ __html: pagesData.home.html }}
+      dangerouslySetInnerHTML={{ __html: pagesData["404"].html }}
     />
   );
 }

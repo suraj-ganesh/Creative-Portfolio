@@ -7,17 +7,17 @@ const pagesData = pagesDataRaw as Record<
 >;
 
 export const metadata: Metadata = {
-  title: pagesData.home.title,
-  description: pagesData.home.description,
+  title: pagesData.contact.title,
+  description: pagesData.contact.description,
 };
 
-export default function Home() {
+export default function ContactPage() {
   return (
     <main
-      data-barba-namespace="home"
+      data-barba-namespace="contact"
       data-barba="container"
       className="transition-container"
-      dangerouslySetInnerHTML={{ __html: pagesData.home.html }}
+      dangerouslySetInnerHTML={{ __html: pagesData.contact.html }}
     />
   );
 }
