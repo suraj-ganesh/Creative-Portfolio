@@ -823,8 +823,10 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
   // Legacy parity: no globe on mobile (the mobile featured carousel
   // replaces it); initGlobeReal is desktop-only.
   if (window.matchMedia("(max-width: 991px)").matches) return () => {};
-  // Pages with filter tabs (work) drive the globe via tab switches;
-  // elsewhere the globe reveals when it nears the viewport.
+  // Pages with filter tabs (work) drive the globe via tab switches:
+  // the globe content starts hidden, so reveal on first intersection
+  // (fires when the Sphere tab shows it in the viewport). Elsewhere the
+  // globe reveals when it nears the viewport.
   const hasTabs =
     typeof scope.querySelector === "function" &&
     !!scope.querySelector("[data-filter-tab]");
@@ -838,7 +840,39 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
       tracked.delete(host);
       return;
     }
-    if (hasTabs) return;
+    if (hasTabs) {
+      // Tab-driven globe: hidden until its filter tab is selected.
+      // IntersectionObserver re-evaluates on display changes, so this
+      // reveals exactly when the tab shows it inside the viewport.
+      let tabFired = false;
+      const tabIo = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting && !tabFired) {
+              tabFired = true;
+              tabIo.disconnect();
+              requestAnimationFrame(() => {
+                try {
+                  host._globeAnimate?.("reveal", 0);
+                } catch {
+                  /* noop */
+                }
+              });
+            }
+          }
+        },
+        { threshold: 0 },
+      );
+      tabIo.observe(host);
+      cleanups.push(() => {
+        try {
+          tabIo.disconnect();
+        } catch {
+          /* noop */
+        }
+      });
+      return;
+    }
     let fired = false;
     const io = new IntersectionObserver(
       (entries) => {

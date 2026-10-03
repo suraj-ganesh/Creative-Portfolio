@@ -14,18 +14,18 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "bleibtgleich - UX/UI Designer & Developer",
+  title: "Suraj Ganesh - Video Editor & Colorist",
   description:
-    "UX/UI designer and creative developer building award-winning digital products. From interface design to animated Webflow, GSAP and WebGL builds.",
+    "Suraj Ganesh is a Video Editor based in Jhapa, working with KHARAAYO INC. Skilled in DaVinci Resolve, Premiere Pro and After Effects — color grading, motion graphics and audio mixing.",
   openGraph: {
-    title: "bleibtgleich - UX/UI Designer & Developer",
+    title: "Suraj Ganesh - Video Editor & Colorist",
     description:
-      "UX/UI designer and creative developer building award-winning digital products. From interface design to animated Webflow, GSAP and WebGL builds.",
-    url: "https://bleibtgleich.dev/",
-    siteName: "bleibtgleich",
+      "Video Editor producing broadcast-quality videos — color grading, motion graphics and audio mixing. BCA at Mechi Multiple Campus, Jhapa.",
+    url: "https://surajganesh.com.np/",
+    siteName: "surajganesh",
     images: [
       {
-        url: "https://pub-0b5dfbb7f1bd46be9741d4d704b92507.r2.dev/opengraph-v3.png",
+        url: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1200&q=80&auto=format&fit=crop",
         width: 1200,
         height: 620,
       },
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "bleibtgleich - UX/UI Designer & Developer",
+    title: "Suraj Ganesh - Video Editor & Colorist",
     description:
-      "UX/UI designer and creative developer building award-winning digital products. From interface design to animated Webflow, GSAP and WebGL builds.",
+      "Video Editor producing broadcast-quality videos — color grading, motion graphics and audio mixing.",
   },
   icons: {
     icon: "/favicons/favicon-mode_0.svg",

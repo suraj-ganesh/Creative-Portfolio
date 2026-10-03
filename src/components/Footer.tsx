@@ -245,7 +245,7 @@ export default function Footer() {
             <div data-reveal="text" className="p1">
               Available for
               <br />
-              selected projects
+              video projects
             </div>
             <div className="footer-mail-inner">
               <div className="opacity-0-5">
@@ -269,6 +269,9 @@ export default function Footer() {
                   </div>
                 </div>
               </a>
+              <div data-reveal="div" className="p1" style={{ marginTop: 8 }}>
+                {profile.phone} · {profile.website}
+              </div>
             </div>
           </div>
         </div>
@@ -287,7 +290,7 @@ export default function Footer() {
               {profile.copyrightYear} © All Right Reserved
             </div>
             <div data-reveal="text" className="p1">
-              made w/ hate
+              Jhapa, Nepal
             </div>
           </div>
         </div>

@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
 export const metadata: Metadata = {
-  title: "Work - bleibtgleich",
-  description: "A selection of recent work, '24 – '26.",
+  title: "Work - Suraj Ganesh",
+  description: "Selected video editing work, '24 – '26. Social campaigns, promos and color grading.",
 };
 
 export default function WorkPage() {
@@ -22,9 +22,9 @@ export default function WorkPage() {
           >
             <div data-preloader="progress" className="progress-wrap">
               <div data-preloader="text-1" className="p1">
-                Designer
+                Video Editor
                 <br />
-                &amp; Developer
+                &amp; Colorist
               </div>
             </div>
           </div>
@@ -34,7 +34,7 @@ export default function WorkPage() {
           >
             <div className="hero-meta">
               <div data-preloader="text-2" className="p1">
-                Based in Kyiv
+                Based in Jhapa
                 <br />
               </div>
               <div className="hero-meta-inner">
@@ -44,16 +44,16 @@ export default function WorkPage() {
                 <a
                   data-preloader="text-2"
                   data-link-trigger=""
-                  href="https://thefirstthelast.agency/?utm_source=bleibtgleich&utm_medium=article&utm_campaign=promo"
+                  href="https://surajganesh.com.np"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="link-inner events-auto pointer w-inline-block"
                 >
                   <div data-link="label" className="p1">
-                    TFTL
+                    KHARAAYO INC.
                   </div>
                   <div data-link="shadow" className="p1 is-2">
-                    TFTL
+                    KHARAAYO INC.
                   </div>
                 </a>
               </div>

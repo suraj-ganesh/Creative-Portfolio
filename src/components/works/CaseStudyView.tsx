@@ -45,9 +45,9 @@ export default function CaseStudyView({ project }: { project: Project }) {
           >
             <div data-preloader="progress" className="progress-wrap">
               <div data-preloader="text-1" className="p1">
-                Designer
+                Video Editor
                 <br />
-                &amp; Developer
+                &amp; Colorist
               </div>
             </div>
           </div>

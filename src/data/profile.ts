@@ -22,10 +22,12 @@ export interface Profile {
     line4: string;
   };
   email: string;
+  phone: string;
+  website: string;
   socials: {
-    linkedin: string;
-    behance: string;
-    instagram: string;
+    linkedin?: string;
+    behance?: string;
+    instagram?: string;
     github?: string;
     x?: string;
   };
@@ -43,44 +45,46 @@ export interface Profile {
 }
 
 export const profile: Profile = {
-  firstName: "Maksym",
-  lastName: "Bleibtgleich",
-  role: "UX/UI Designer & Developer",
-  location: "Based in Kyiv",
+  firstName: "Suraj",
+  lastName: "Ganesh",
+  role: "Video Editor & Colorist",
+  location: "Based in Jhapa",
   company: {
-    name: "TFTL",
-    url: "https://thefirstthelast.agency/?utm_source=bleibtgleich&utm_medium=article&utm_campaign=promo",
+    name: "KHARAAYO INC.",
+    url: "https://surajganesh.com.np",
   },
   heroHeadings: {
-    line1: "Design",
-    line2: "Digital",
-    line3: "Products,",
-    line4: "UX/UI",
-    line5: "& Web-flow dev.",
+    line1: "Edit",
+    line2: "Cinematic",
+    line3: "Stories,",
+    line4: "Color",
+    line5: "& Motion graphics.",
   },
   heroBio:
-    "Designs and builds websites, products, and digital systems with a focus on clarity, performance, and usability.",
+    "Video Editor producing digital content for media — skilled in DaVinci Resolve, Premiere Pro and After Effects, with a strong command of color grading, motion graphics and audio mixing.",
   heroMotto: {
-    line1: "the",
-    line2: "best",
-    line3: "ideas deserve",
-    line4: "execution.",
+    line1: "every",
+    line2: "cut",
+    line3: "tells a",
+    line4: "story.",
   },
-  email: "hi.bleibtgleich@gmail.com",
+  email: "surajganesh404@gmail.com",
+  phone: "+977 9745867068",
+  website: "surajganesh.com.np",
   socials: {
-    linkedin: "https://www.linkedin.com/in/bleibtgleich/",
-    behance: "https://www.behance.net/bleibtgleich",
-    instagram: "https://www.instagram.com/bleibtgleich/",
+    linkedin: "",
+    behance: "",
+    instagram: "",
   },
   footerQuote: {
-    line1: "Everything",
-    line2: "that exists",
-    line3: "had first",
-    line4: "existed as",
-    line5: "nothing",
-    line6: "more",
-    line7: "than a",
-    line8: "sentence.",
+    line1: "Every",
+    line2: "story",
+    line3: "starts as",
+    line4: "raw footage",
+    line5: "waiting",
+    line6: "for",
+    line7: "the",
+    line8: "final cut.",
   },
   copyrightYear: "‘26",
 };

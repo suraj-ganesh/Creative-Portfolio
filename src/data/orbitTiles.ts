@@ -6,27 +6,27 @@ export interface OrbitCard {
 
 export const defaultOrbitCards: OrbitCard[] = [
   {
-    title: "Velor Dating App",
+    title: "Social Media Campaign Series",
     image:
-      "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a6ba34a52217319fe1fbd57_img-cover-velor-app.avif",
-    link: "/works/velor-app",
+      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80&auto=format&fit=crop",
+    link: "/works/social-media-campaign",
   },
   {
-    title: "bleibtgleich'25",
+    title: "Product Promo Video",
     image:
-      "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a660df2554cadd26cc0e5f4_img-cover-bleibtgleich-25.avif",
-    link: "/works/bleibtgleich25",
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80&auto=format&fit=crop",
+    link: "/works/product-promo-video",
   },
   {
-    title: "Grabl App",
+    title: "Color Grading Showcase",
     image:
-      "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a660dfa6a5afe2ac40d6bc7_img-cover-grabl-app.avif",
-    link: "/works/grabl-app",
+      "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=800&q=80&auto=format&fit=crop",
+    link: "/works/color-grading-showcase",
   },
   {
-    title: "Do Lorem Ipsum",
+    title: "Motion Graphics Package",
     image:
-      "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a660e1b36062aa76138ac6b_img-cover-do-lorem-ipsum.avif",
-    link: "/works/do-lorem-ipsum",
+      "https://images.unsplash.com/photo-1601506521937-0121a7fc2a6b?w=800&q=80&auto=format&fit=crop",
+    link: "/works/motion-graphics-package",
   },
 ];

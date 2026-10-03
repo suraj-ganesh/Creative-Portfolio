@@ -1,4 +1,4 @@
-import { DUR, gsap, isDesktop, q, qa } from "@/lib/fx/core";
+import { DUR, gsap, isDesktop, q, qa, fxStatus } from "@/lib/fx/core";
 import { lenisStart, lenisStop } from "@/lib/fx/lenis";
 
 /**
@@ -36,13 +36,16 @@ function showStatic(els: Element[]): void {
 
 async function start(): Promise<void> {
   const hooks = qa("[data-preloader]");
+  const ns = namespace();
+  fxStatus().preloader = `hooks=${hooks.length} ns=${ns}`;
   if (hooks.length === 0) {
     settled = true;
     return;
   }
 
   // Excluded pages (404/demo): hide preloader chrome, resolve.
-  if (namespace() !== null && EXCLUDED_NAMESPACES.has(namespace() as string)) {
+  if (ns !== null && EXCLUDED_NAMESPACES.has(ns as string)) {
+    fxStatus().preloader += " excluded";
     gsap.set(hooks, { display: "none" });
     lenisStart();
     settled = true;
@@ -62,6 +65,7 @@ async function start(): Promise<void> {
 
   // Missing progress/count hooks: nothing to animate; show content, resolve.
   if (!progress || !count) {
+    fxStatus().preloader += ` no-${!progress ? "progress" : "count"}`;
     showStatic(texts);
     if (navGrid) gsap.set(navGrid, { visibility: "visible", x: 0, y: 0 });
     if (navButton) gsap.set(navButton, { visibility: "visible", x: 0, y: 0 });
@@ -73,6 +77,7 @@ async function start(): Promise<void> {
 
   // Reduced motion: everything visible instantly, resolve.
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    fxStatus().preloader += " os-reduced-motion";
     gsap.set(progress, {
       visibility: "visible",
       height: "100%",
@@ -131,6 +136,7 @@ async function start(): Promise<void> {
       if (stickyNames.length) showStatic(stickyNames);
 
       const done = () => {
+        fxStatus().preloader += " full-run";
         // Legacy parity: home keeps progress + texts visible (they ARE the
         // hero); only the counter hides. Other pages fade texts + progress
         // (opacity only, never display:none — the layout underneath persists).

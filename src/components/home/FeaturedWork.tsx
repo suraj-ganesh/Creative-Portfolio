@@ -13,7 +13,7 @@ export default function FeaturedWork() {
               Work
             </div>
             <div data-featured="text" data-reveal="text" className="h1">
-              24-26
+              24-25
             </div>
             <div data-featured="link" className="featured-link-wrap">
               <a
@@ -69,7 +69,7 @@ export default function FeaturedWork() {
               Work
             </div>
             <div m-data-featured="text" data-reveal="text" className="h1">
-              24-26
+              24-25
             </div>
             <div m-data-featured="link" className="m-featured-link-wrap">
               <a

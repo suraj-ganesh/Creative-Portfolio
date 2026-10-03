@@ -10,7 +10,7 @@ export default function AwardsSection() {
             className="awards--heading-wrap"
           >
             <h1 data-reveal="text" className="h1">
-              Awards
+              Work
             </h1>
           </div>
           <h1
@@ -25,14 +25,14 @@ export default function AwardsSection() {
             id="w-node-_7997afcf-e344-c1f7-2ee7-9e212865c18c-ef9a5cf3"
             className="h1"
           >
-            Recog-
+            Crede-
           </h1>
           <h1
             data-reveal="text"
             id="w-node-af7749f1-fef4-37e3-3122-b9dba9216442-ef9a5cf3"
             className="h1"
           >
-            nitions
+            ntials
           </h1>
         </div>
 

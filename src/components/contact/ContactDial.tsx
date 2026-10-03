@@ -75,7 +75,7 @@ export default function ContactDial() {
           <a
             data-haptic="medium"
             data-contact-dial-item="instagram"
-            href={profile.socials.instagram}
+            href={profile.socials.instagram || `mailto:${profile.email}`}
             target="_blank"
             rel="noopener noreferrer"
             className="dial-item w-inline-block"
@@ -103,7 +103,7 @@ export default function ContactDial() {
           <a
             data-haptic="medium"
             data-contact-dial-item="behance"
-            href={profile.socials.behance}
+            href={profile.socials.behance || `mailto:${profile.email}`}
             target="_blank"
             rel="noopener noreferrer"
             className="dial-item w-inline-block"
@@ -131,7 +131,7 @@ export default function ContactDial() {
           <a
             data-haptic="medium"
             data-contact-dial-item="linkedin"
-            href={profile.socials.linkedin}
+            href={profile.socials.linkedin || `mailto:${profile.email}`}
             target="_blank"
             rel="noopener noreferrer"
             className="dial-item w-inline-block"

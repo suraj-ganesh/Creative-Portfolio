@@ -5,9 +5,9 @@ import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
 export const metadata: Metadata = {
-  title: "Contact - bleibtgleich",
+  title: "Contact - Suraj Ganesh",
   description:
-    "Write directly. Email for commissions and collaborations, social links for everything else.",
+    "Write directly. Email surajganesh404@gmail.com for commissions and collaborations.",
 };
 
 export default function ContactPage() {
@@ -24,9 +24,9 @@ export default function ContactPage() {
           >
             <div data-preloader="progress" className="progress-wrap">
               <div data-preloader="text-1" className="p1">
-                Designer
+                Video Editor
                 <br />
-                &amp; Developer
+                &amp; Colorist
               </div>
             </div>
           </div>

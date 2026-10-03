@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { gsap, DUR } from "@/lib/fx/core";
+import { gsap, DUR, prefersReduced, qa, type Cleanup } from "@/lib/fx/core";
+import { requestThemeMode, type ThemeMode } from "@/lib/theme";
 
 /**
  * Port of the THREE goo/liquid transition from legacy `initThemeMode`
@@ -235,4 +236,88 @@ export function disposeThemeLiquid(): void {
   if (s.renderer.domElement.parentNode) {
     s.renderer.domElement.parentNode.removeChild(s.renderer.domElement);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Home hero theme switcher ([data-theme-mode] dots outside the dial)  */
+/* ------------------------------------------------------------------ */
+
+const DOT_LIQUID_COLOR: Record<ThemeMode, string> = {
+  base: "#ffffff",
+  "1": "#bec1ca",
+  "2": "#FF633D",
+  "3": "#919E44",
+  "4": "#D5312F",
+};
+
+const DOT_CLASS: Record<ThemeMode, string> = {
+  base: "theme-mode-base",
+  "1": "theme-mode-1",
+  "2": "theme-mode-2",
+  "3": "theme-mode-3",
+  "4": "theme-mode-4",
+};
+
+function isDotMode(v: string | null): v is ThemeMode {
+  return (
+    v === "base" || v === "1" || v === "2" || v === "3" || v === "4"
+  );
+}
+
+function currentDotMode(): ThemeMode | null {
+  const cls = document.documentElement.classList;
+  for (const [mode, c] of Object.entries(DOT_CLASS) as Array<
+    [ThemeMode, string]
+  >) {
+    if (cls.contains(c)) return mode;
+  }
+  return null;
+}
+
+/**
+ * Home hero 5-theme switcher. The contact dial owns its own theme buttons
+ * (DialThemeButton / dial.ts); this binds the standalone hero dots
+ * (`.theme-switch-inner[data-theme-mode]` outside `[data-contact-dial]`)
+ * with the same liquid-cover transition the original site plays.
+ * No-op when the hero switcher is absent. Cleanup removes all listeners.
+ */
+export function initThemeDots(scope: ParentNode = document): Cleanup {
+  const dots = qa<HTMLElement>("[data-theme-mode]", scope).filter(
+    (el) =>
+      !el.closest('[data-contact-dial="wrap"]') &&
+      el.closest(".theme-switch, .theme-grid") !== null,
+  );
+  if (!dots.length) return () => {};
+  const cleanups: Cleanup[] = [];
+  const timers = new Set<number>();
+
+  dots.forEach((dot) => {
+    const onClick = (e: MouseEvent) => {
+      const mode = dot.getAttribute("data-theme-mode");
+      if (!isDotMode(mode)) return;
+      if (currentDotMode() === mode) return;
+      if (prefersReduced()) {
+        requestThemeMode(mode);
+        return;
+      }
+      const r = dot.getBoundingClientRect();
+      const x = (r.left + r.width / 2) / window.innerWidth;
+      const y = (r.top + r.height / 2) / window.innerHeight;
+      void runThemeLiquid(DOT_LIQUID_COLOR[mode], x, y);
+      const t = window.setTimeout(() => {
+        timers.delete(t);
+        requestThemeMode(mode);
+      }, 600);
+      timers.add(t);
+      e.preventDefault();
+    };
+    dot.addEventListener("click", onClick);
+    cleanups.push(() => dot.removeEventListener("click", onClick));
+  });
+
+  return () => {
+    cleanups.forEach((fn) => fn());
+    timers.forEach((t) => window.clearTimeout(t));
+    timers.clear();
+  };
 }

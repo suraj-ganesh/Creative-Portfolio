@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { gsap, ScrollTrigger, DUR, prefersReduced } from "@/lib/fx/core";
+import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus } from "@/lib/fx/core";
 import {
   initLenis,
   lenisStop,
@@ -23,6 +23,7 @@ import { initFluidReveal, destroyFluidReveal } from "@/lib/fx/fluid";
 import { initContactDial } from "@/lib/fx/dial";
 import { initOrbitTiles } from "@/lib/fx/orbit";
 import { initInfiniteCanvas, destroyInfiniteCanvas } from "@/lib/fx/canvas";
+import { initThemeDots } from "@/lib/fx/theme-liquid";
 
 function pageRoot(): HTMLElement | null {
   return document.querySelector("main");
@@ -32,8 +33,12 @@ function pageRoot(): HTMLElement | null {
  * instead of breaking the whole init chain. */
 function safe(name: string, init: () => () => void): () => void {
   try {
-    return init();
+    const cleanup = init();
+    fxStatus().modules.push(name);
+    return cleanup;
   } catch (err) {
+    const msg = `${name}: ${err instanceof Error ? err.message : String(err)}`;
+    fxStatus().errors.push(msg);
     console.error(`[fx] ${name} failed:`, err);
     return () => {};
   }
@@ -83,6 +88,7 @@ export default function SiteFx() {
       safe("orbit", () => initOrbitTiles()),
       safe("canvas", () => initInfiniteCanvas()),
       safe("sticky", () => initStickyName()),
+      safe("themedots", () => initThemeDots()),
     ];
     lenisResize();
     ScrollTrigger.refresh();
@@ -112,6 +118,7 @@ export default function SiteFx() {
 
   // Boot once: persistent systems + first-visit preloader, then first page init.
   useEffect(() => {
+    fxLog("boot start");
     const bootCleanups = [
       safe("lenis", initLenis),
       safe("haptics", initHaptics),
@@ -119,10 +126,15 @@ export default function SiteFx() {
       safe("nav", initNav),
     ];
     let cancelled = false;
+    const t0 = performance.now();
     const finishBoot = () => {
       if (cancelled) return;
+      fxLog(`preloader resolved in ${Math.round(performance.now() - t0)}ms`);
       readyRef.current = true;
       initPage();
+      fxLog(
+        `initPage done, ScrollTriggers: ${ScrollTrigger.getAll().length}, modules: ${fxStatus().modules.join(",")}`,
+      );
     };
     void runPreloader().then(finishBoot, (err) => {
       console.error("[fx] preloader failed:", err);

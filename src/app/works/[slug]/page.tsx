@@ -15,13 +15,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = projects.find((p) => p.slug === slug);
   if (!project) {
-    return { title: "Work - bleibtgleich" };
+    return { title: "Work - Suraj Ganesh" };
   }
   return {
-    title: `${project.title} - bleibtgleich`,
+    title: `${project.title} - Suraj Ganesh`,
     description: project.description,
     openGraph: {
-      title: `${project.title} - bleibtgleich`,
+      title: `${project.title} - Suraj Ganesh`,
       description: project.description,
       images: project.coverImage ? [{ url: project.coverImage }] : undefined,
     },
