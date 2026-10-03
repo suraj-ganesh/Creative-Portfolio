@@ -17,8 +17,10 @@ export function FooterHours({ className, id }: { className?: string; id?: string
     const t = setInterval(() => setH(now().h), 1000);
     return () => clearInterval(t);
   }, []);
+  // NOTE: no data-reveal here. Reveal splitting mutates this node's children,
+  // and the per-second re-render would then crash React's reconciler.
   return (
-    <h1 data-reveal="text" id={id} className={className} suppressHydrationWarning>
+    <h1 id={id} className={className} suppressHydrationWarning>
       {h}
     </h1>
   );
@@ -31,8 +33,9 @@ export function FooterMinutes({ className, id }: { className?: string; id?: stri
     const t = setInterval(() => setM(now().m), 1000);
     return () => clearInterval(t);
   }, []);
+  // NOTE: no data-reveal here (see FooterHours).
   return (
-    <h1 data-reveal="text" id={id} className={className} suppressHydrationWarning>
+    <h1 id={id} className={className} suppressHydrationWarning>
       {m}
     </h1>
   );

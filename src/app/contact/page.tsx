@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main
+      data-page="contact"
       className="transition-container"
     >
       <section className="preloader-wrap">

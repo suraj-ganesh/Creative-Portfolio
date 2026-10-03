@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <main
+      data-page="error-404"
       className="transition-container"
       dangerouslySetInnerHTML={{ __html: pagesData["404"].html }}
     />

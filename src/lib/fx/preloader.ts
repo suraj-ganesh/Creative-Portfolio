@@ -21,9 +21,13 @@ export function runPreloader(): Promise<void> {
 }
 
 function namespace(): string | null {
-  return (
-    q("[data-barba-namespace]")?.getAttribute("data-barba-namespace") ?? null
-  );
+  // Pages stamp <main data-page="..."> (home/works/contact/archive/error-404/slug).
+  // Falls back to the path so the home branch works even without the marker.
+  const marked = q("[data-page]")?.getAttribute("data-page") ?? null;
+  if (marked) return marked;
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  if (path === "/") return "home";
+  return path;
 }
 
 function showStatic(els: Element[]): void {
@@ -127,26 +131,27 @@ async function start(): Promise<void> {
       if (stickyNames.length) showStatic(stickyNames);
 
       const done = () => {
-        gsap.set([progress, count], { display: "none" });
+        // Legacy parity: home keeps progress + texts visible (they ARE the
+        // hero); only the counter hides. Other pages fade texts + progress
+        // (opacity only, never display:none — the layout underneath persists).
+        gsap.to(count, { autoAlpha: 0, duration: DUR.S, ease: "power2.in" });
+        if (!isHome && texts.length)
+          gsap.to(texts, { autoAlpha: 0, duration: DUR.S, ease: "power2.in" });
+        if (!isHome)
+          gsap.to(progress, {
+            opacity: 0,
+            duration: DUR.S,
+            delay: DUR.S,
+            ease: "power2.in",
+          });
         lenisStart();
         settled = true;
         window.dispatchEvent(new CustomEvent("lenis:settled"));
         resolve();
       };
 
-      if (isHome) {
-        gsap.delayedCall(DUR.S + 0.5 * DUR.STAGGER, done);
-      } else {
-        if (texts.length)
-          gsap.to(texts, { autoAlpha: 0, duration: DUR.S, ease: "power2.in" });
-        gsap.to(progress, {
-          opacity: 0,
-          duration: DUR.S,
-          delay: DUR.S,
-          ease: "power2.in",
-        });
-        gsap.delayedCall(DUR.S + 0.5 * DUR.STAGGER, done);
-      }
+      // Counter + nav fly-in, then done (legacy: durS + half stagger).
+      gsap.delayedCall(DUR.S + 0.5 * DUR.STAGGER, done);
     };
     const onLoad = () => {
       tween?.kill();
@@ -165,6 +170,9 @@ async function start(): Promise<void> {
       onUpdate: render,
       onComplete: finish,
     });
+    // Safety: the page init gates on this promise — never hang longer than
+    // the max progress run plus the finish beat.
+    window.setTimeout(finish, MAX_DURATION * 1000 + 3000);
     if (document.readyState === "complete") onLoad();
     else window.addEventListener("load", onLoad, { once: true });
   });

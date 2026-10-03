@@ -264,9 +264,10 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
       side: THREE.DoubleSide,
     });
     mat.onBeforeCompile = (sh) => {
+      // three >= r152 uses per-map UV varyings (vMapUv), not the legacy vUv.
       sh.fragmentShader = sh.fragmentShader.replace(
         "#include <map_fragment>",
-        `\n        vec2 mapUv = vUv;\n        if (!gl_FrontFacing) { mapUv.x = 1.0 - mapUv.x; }\n        vec4 sampledDiffuseColor = texture2D(map, mapUv);\n        diffuseColor *= sampledDiffuseColor;\n        `,
+        `\n        vec2 mapUv = vMapUv;\n        if (!gl_FrontFacing) { mapUv.x = 1.0 - mapUv.x; }\n        vec4 sampledDiffuseColor = texture2D(map, mapUv);\n        diffuseColor *= sampledDiffuseColor;\n        `,
       );
     };
     const mesh = new THREE.Mesh(geo, mat);
@@ -819,12 +820,63 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
 
 export function initGlobe(scope: ParentNode = document): Cleanup {
   if (typeof window === "undefined") return () => {};
+  // Legacy parity: no globe on mobile (the mobile featured carousel
+  // replaces it); initGlobeReal is desktop-only.
+  if (window.matchMedia("(max-width: 991px)").matches) return () => {};
+  // Pages with filter tabs (work) drive the globe via tab switches;
+  // elsewhere the globe reveals when it nears the viewport.
+  const hasTabs =
+    typeof scope.querySelector === "function" &&
+    !!scope.querySelector("[data-filter-tab]");
+  const cleanups: Cleanup[] = [];
   qa<GlobeHost>('[data-globe="wrap"]', scope).forEach((host) => {
     if (tracked.has(host)) return;
     tracked.add(host);
-    initGlobeReal(host, scope);
+    try {
+      initGlobeReal(host, scope);
+    } catch {
+      tracked.delete(host);
+      return;
+    }
+    if (hasTabs) return;
+    let fired = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !fired) {
+            fired = true;
+            io.disconnect();
+            requestAnimationFrame(() => {
+              try {
+                host._globeAnimate?.("reveal", 0);
+              } catch {
+                /* noop */
+              }
+            });
+          }
+        }
+      },
+      { rootMargin: "50% 0% 50% 0%" },
+    );
+    io.observe(host);
+    cleanups.push(() => {
+      try {
+        io.disconnect();
+      } catch {
+        /* noop */
+      }
+    });
   });
-  return () => destroyGlobe(scope);
+  return () => {
+    for (const fn of cleanups) {
+      try {
+        fn();
+      } catch {
+        /* noop */
+      }
+    }
+    destroyGlobe(scope);
+  };
 }
 
 export function destroyGlobe(scope: ParentNode = document): void {

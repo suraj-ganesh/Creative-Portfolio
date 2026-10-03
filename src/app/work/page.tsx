@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 export default function WorkPage() {
   return (
     <main
+      data-page="works"
       className="transition-container"
     >
       <section className="preloader-wrap">

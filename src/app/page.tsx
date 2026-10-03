@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main
+      data-page="home"
       className="transition-container"
     >
       <Hero />

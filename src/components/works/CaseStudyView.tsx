@@ -20,6 +20,7 @@ export default function CaseStudyView({ project }: { project: Project }) {
   if (existingWork && existingWork.html) {
     return (
       <main
+        data-page={project.slug}
         className="transition-container"
         dangerouslySetInnerHTML={{ __html: existingWork.html }}
       />
@@ -33,6 +34,7 @@ export default function CaseStudyView({ project }: { project: Project }) {
 
   return (
     <main
+      data-page={project.slug}
       className="transition-container"
     >
       <section className="preloader-wrap">

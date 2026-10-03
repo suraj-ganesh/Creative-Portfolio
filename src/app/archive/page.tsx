@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 export default function ArchivePage() {
   return (
     <main
+      data-page="archive"
       className="transition-container"
       dangerouslySetInnerHTML={{ __html: pagesData.archive.html }}
     />

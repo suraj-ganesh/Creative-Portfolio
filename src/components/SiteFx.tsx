@@ -28,6 +28,17 @@ function pageRoot(): HTMLElement | null {
   return document.querySelector("main");
 }
 
+/** Run an fx init safely: a throwing module logs and yields a no-op cleanup
+ * instead of breaking the whole init chain. */
+function safe(name: string, init: () => () => void): () => void {
+  try {
+    return init();
+  } catch (err) {
+    console.error(`[fx] ${name} failed:`, err);
+    return () => {};
+  }
+}
+
 function scrollTopImmediate() {
   const lenis = getLenis();
   if (lenis) lenis.scrollTo(0, { immediate: true });
@@ -63,15 +74,15 @@ export default function SiteFx() {
   const initPage = useCallback(() => {
     updateNavIndicators();
     pageCleanups.current = [
-      initReveals(),
-      initLinks(),
-      initTiltCursor(),
-      initGlobe(),
-      initFluidReveal(),
-      initContactDial(),
-      initOrbitTiles(),
-      initInfiniteCanvas(),
-      initStickyName(),
+      safe("reveals", () => initReveals()),
+      safe("links", () => initLinks()),
+      safe("tilt", () => initTiltCursor()),
+      safe("globe", () => initGlobe()),
+      safe("fluid", () => initFluidReveal()),
+      safe("dial", () => initContactDial()),
+      safe("orbit", () => initOrbitTiles()),
+      safe("canvas", () => initInfiniteCanvas()),
+      safe("sticky", () => initStickyName()),
     ];
     lenisResize();
     ScrollTrigger.refresh();
@@ -102,16 +113,20 @@ export default function SiteFx() {
   // Boot once: persistent systems + first-visit preloader, then first page init.
   useEffect(() => {
     const bootCleanups = [
-      initLenis(),
-      initHaptics(),
-      initCustomScrollbar(),
-      initNav(),
+      safe("lenis", initLenis),
+      safe("haptics", initHaptics),
+      safe("scrollbar", initCustomScrollbar),
+      safe("nav", initNav),
     ];
     let cancelled = false;
-    void runPreloader().then(() => {
+    const finishBoot = () => {
       if (cancelled) return;
       readyRef.current = true;
       initPage();
+    };
+    void runPreloader().then(finishBoot, (err) => {
+      console.error("[fx] preloader failed:", err);
+      finishBoot();
     });
     return () => {
       cancelled = true;
