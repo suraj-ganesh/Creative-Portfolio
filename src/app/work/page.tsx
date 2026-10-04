@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
 export const metadata: Metadata = {
-  title: "Work - Suraj Ganesh",
+  title: "Suraj Ganesh",
   description: "Selected video editing work, '24 – '26. Social campaigns, promos and color grading.",
 };
 

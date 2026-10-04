@@ -64,21 +64,6 @@ export default function Nav() {
               </div>
             </div>
           </a>
-          <a
-            data-haptic="medium"
-            data-nav="link"
-            data-link-trigger=""
-            data-nav-link="archive"
-            href="/archive"
-            className="menu-link is-archive w-inline-block"
-          >
-            <div className="menu-link-inner">
-              <div className="link-inner">
-                <div data-link="label" className="p1">Experiments</div>
-                <div data-link="shadow" className="p1 is-2">Experiments</div>
-              </div>
-            </div>
-          </a>
         </div>
       </div>
     </nav>

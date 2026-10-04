@@ -109,7 +109,9 @@ let state: LiquidState | null = null;
 function ensure(): LiquidState {
   if (state) return state;
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // The liquid mask is a blobby alpha cover — DPR 1 is plenty and keeps
+  // the fullscreen fbm shader cheap on integrated GPUs.
+  renderer.setPixelRatio(1);
   renderer.setSize(window.innerWidth, window.innerHeight);
   const el = renderer.domElement;
   Object.assign(el.style, {
@@ -173,6 +175,7 @@ export function runThemeLiquid(
   color: string,
   x = 0.5,
   y = 0.5,
+  duration: number = DUR.L,
 ): Promise<void> {
   const s = ensure();
   if (s.tween) s.tween.kill();
@@ -210,7 +213,7 @@ export function runThemeLiquid(
   return new Promise<void>((resolve) => {
     s.tween = gsap.to(s.uniforms.uProgress, {
       value: cover,
-      duration: DUR.L,
+      duration,
       ease: "power2.out",
       onComplete: () => {
         el.style.display = "none";
@@ -220,6 +223,17 @@ export function runThemeLiquid(
       },
     });
   });
+}
+
+/** Compile the liquid-transition GL program ahead of time so the
+ *  first theme flip has no shader-compile hitch. Safe to call twice. */
+export function prewarmThemeLiquid(): void {
+  if (typeof window === "undefined") return;
+  try {
+    ensure();
+  } catch {
+    /* WebGL unavailable — callers fall back gracefully */
+  }
 }
 
 export function disposeThemeLiquid(): void {
@@ -247,7 +261,7 @@ const DOT_LIQUID_COLOR: Record<ThemeMode, string> = {
   "1": "#bec1ca",
   "2": "#FF633D",
   "3": "#919E44",
-  "4": "#D5312F",
+  "4": "#111111",
 };
 
 const DOT_CLASS: Record<ThemeMode, string> = {

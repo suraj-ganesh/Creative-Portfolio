@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
+import ThemeLever from "@/components/ThemeLever";
 import GridWrap from "@/components/GridWrap";
 import StickyName from "@/components/StickyName";
 import CustomScrollbar from "@/components/CustomScrollbar";
@@ -14,11 +15,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Suraj Ganesh - Video Editor & Colorist",
+  title: "Suraj Ganesh",
   description:
     "Suraj Ganesh is a Video Editor based in Jhapa, working with KHARAAYO INC. Skilled in DaVinci Resolve, Premiere Pro and After Effects — color grading, motion graphics and audio mixing.",
   openGraph: {
-    title: "Suraj Ganesh - Video Editor & Colorist",
+    title: "Suraj Ganesh",
     description:
       "Video Editor producing broadcast-quality videos — color grading, motion graphics and audio mixing. BCA at Mechi Multiple Campus, Jhapa.",
     url: "https://surajganesh.com.np/",
@@ -34,13 +35,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Suraj Ganesh - Video Editor & Colorist",
+    title: "Suraj Ganesh",
     description:
       "Video Editor producing broadcast-quality videos — color grading, motion graphics and audio mixing.",
   },
   icons: {
-    icon: "/favicons/favicon-mode_0.svg",
-    apple: "/favicons/favicon-mode_0.svg",
+    icon: "/images/hero-mark.png",
+    apple: "/images/hero-mark.png",
   },
 };
 
@@ -53,7 +54,7 @@ export default function RootLayout({
     <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.prod.website-files.com" />
-        <link rel="icon" type="image/svg+xml" href="/favicons/favicon-mode_0.svg" />
+        <link rel="icon" type="image/png" href="/images/hero-mark.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -69,10 +70,25 @@ export default function RootLayout({
         />
       </head>
       <body className="body">
+        {/* Shared goo filter for the blob-to-text heading morph.
+            The blur deviation is driven from lib/fx/reveal.ts. */}
+        <svg aria-hidden="true" width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            <filter id="text-goo" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur id="text-goo-blur" stdDeviation="10" result="b" />
+              <feColorMatrix
+                in="b"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11"
+              />
+            </filter>
+          </defs>
+        </svg>
         <ThemeProvider>
         <div className="transition-wrapper">
           <GridWrap />
           <Nav />
+          <ThemeLever />
           {children}
           <StickyName />
           <CustomScrollbar />

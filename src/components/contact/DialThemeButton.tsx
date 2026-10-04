@@ -9,7 +9,7 @@ const LIQUID_COLOR: Record<ThemeMode, string> = {
   "1": "#bec1ca",
   "2": "#FF633D",
   "3": "#919E44",
-  "4": "#D5312F",
+  "4": "#111111",
 };
 
 /** Contact-dial theme switch: liquid cover, theme swap mid-way, reveal. */

@@ -7,7 +7,7 @@ const pagesData = pagesDataRaw as Record<
 >;
 
 export const metadata: Metadata = {
-  title: "404 Not Found - Suraj Ganesh",
+  title: "Suraj Ganesh",
 };
 
 export default function NotFound() {

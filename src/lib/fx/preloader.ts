@@ -108,15 +108,25 @@ async function start(): Promise<void> {
       x: `${off}vw`,
       y: `-${off}vw`,
     });
-  gsap.fromTo(
-    texts,
-    { autoAlpha: 0, y: 12 },
-    { autoAlpha: 1, y: 0, duration: DUR.S, ease: "power3.out" },
+  // Serial entrance: role line first, then the location/agency lines.
+  const rise = { autoAlpha: 1, y: 0, duration: DUR.S, ease: "power3.out" } as const;
+  if (text1) gsap.fromTo(text1, { autoAlpha: 0, y: 12 }, rise);
+  text2s.forEach((el, i) =>
+    gsap.fromTo(
+      el,
+      { autoAlpha: 0, y: 12 },
+      { ...rise, delay: 0.14 * (i + 1) },
+    ),
   );
 
   await new Promise<void>((resolve) => {
     let finished = false;
     const state = { value: 0 };
+    // First visit must always show a real count-up: never rush to 100%
+    // faster than this, even on instant window load (production loads so
+    // fast the counter would otherwise flash by unseen).
+    const MIN_COUNT_S = 2.4;
+    const countStartedAt = performance.now();
     const render = () => {
       count.textContent = `${Math.round(state.value)}%`;
       gsap.set(progress, { height: `${state.value}%` });
@@ -161,9 +171,12 @@ async function start(): Promise<void> {
     };
     const onLoad = () => {
       tween?.kill();
+      // Stretch the catch-up run so the count-up stays visible for at
+      // least MIN_COUNT_S from the moment counting started.
+      const elapsedS = (performance.now() - countStartedAt) / 1000;
       tween = gsap.to(state, {
         value: 100,
-        duration: 0.6,
+        duration: Math.max(0.6, MIN_COUNT_S - elapsedS),
         ease: "power2.out",
         onUpdate: render,
         onComplete: finish,

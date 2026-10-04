@@ -20,11 +20,11 @@ const THEME_CLASS: Record<ThemeMode, string> = {
 };
 
 const FAVICON: Record<ThemeMode, string> = {
-  base: "/favicons/favicon-mode_0.svg",
-  "1": "/favicons/favicon-mode_1.svg",
-  "2": "/favicons/favicon-mode_2.svg",
-  "3": "/favicons/favicon-mode_3.svg",
-  "4": "/favicons/favicon-mode_4.svg",
+  base: "/images/hero-mark.png",
+  "1": "/images/hero-mark.png",
+  "2": "/images/hero-mark.png",
+  "3": "/images/hero-mark.png",
+  "4": "/images/hero-mark.png",
 };
 
 const STORAGE_KEY = "theme-mode";
@@ -59,7 +59,7 @@ function applyTheme(mode: ThemeMode) {
       .forEach((el) => el.remove());
     const link = document.createElement("link");
     link.rel = "icon";
-    link.type = "image/svg+xml";
+    link.type = "image/png";
     link.href = href;
     document.head.appendChild(link);
   }

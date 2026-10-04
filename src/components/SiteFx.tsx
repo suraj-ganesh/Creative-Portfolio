@@ -21,6 +21,7 @@ import { initStickyName } from "@/lib/fx/sticky-name";
 import { initGlobe, destroyGlobe } from "@/lib/fx/globe";
 import { initFluidReveal, destroyFluidReveal } from "@/lib/fx/fluid";
 import { initContactDial } from "@/lib/fx/dial";
+import { initContactPills } from "@/lib/fx/pills";
 import { initOrbitTiles } from "@/lib/fx/orbit";
 import { initInfiniteCanvas, destroyInfiniteCanvas } from "@/lib/fx/canvas";
 import { initThemeDots } from "@/lib/fx/theme-liquid";
@@ -85,6 +86,7 @@ export default function SiteFx() {
       safe("globe", () => initGlobe()),
       safe("fluid", () => initFluidReveal()),
       safe("dial", () => initContactDial()),
+      safe("pills", () => initContactPills()),
       safe("orbit", () => initOrbitTiles()),
       safe("canvas", () => initInfiniteCanvas()),
       safe("sticky", () => initStickyName()),

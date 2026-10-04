@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local media (too large for git hosting — 100MB/file limit; keep locally / deploy via LFS or CDN)
+public/Videos/
+prodserver.log
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

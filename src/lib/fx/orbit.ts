@@ -21,6 +21,8 @@ function ensureOsmoEase() {
 
 // Layout constants preserved verbatim from legacy initOrbitTiles.
 const X_RADIUS = 1; // x radius as a multiple of tile width
+const X_RADIUS_PORTRAIT = 2.8; // wider spread for narrow 9:16 tiles so the
+// orbit keeps the same on-screen diameter as landscape 4/3 cards
 const Y_RADIUS = 0; // y radius as a multiple of tile width
 const BLUR_MAX = 0.04; // max blur (× tile width) at the back of the orbit
 const MIN_SCALE = 0.2;
@@ -79,7 +81,11 @@ function initRoot(root: HTMLElement): Cleanup {
   /** Position every tile along the orbit for the current progress values. */
   const layout = () => {
     const w = items[0].offsetWidth;
-    const rx = w * X_RADIUS;
+    const h = items[0].offsetHeight;
+    // Portrait 9:16 tiles are much narrower than landscape cards — widen
+    // the radius proportionally so the orbit keeps its on-screen diameter.
+    const isPortrait = h > w * 1.2;
+    const rx = w * (isPortrait ? X_RADIUS_PORTRAIT : X_RADIUS);
     const ry = w * Y_RADIUS;
     const blurMax = w * BLUR_MAX;
     updateStatuses();

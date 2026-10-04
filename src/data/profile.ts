@@ -28,6 +28,7 @@ export interface Profile {
     linkedin?: string;
     behance?: string;
     instagram?: string;
+    facebook?: string;
     github?: string;
     x?: string;
   };
@@ -75,6 +76,9 @@ export const profile: Profile = {
     linkedin: "",
     behance: "",
     instagram: "",
+    facebook: "",
+    github: "",
+    x: "",
   },
   footerQuote: {
     line1: "Every",

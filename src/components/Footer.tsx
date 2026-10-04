@@ -1,20 +1,6 @@
 import { profile } from "@/data/profile";
-import { FooterHours, FooterMinutes } from "@/components/FooterClock";
-import FooterLogo from "@/components/FooterLogo";
 
 export default function Footer() {
-  const materialsLogos = [
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a66122f151830893c63f389_img-logo-materials-experiment-08.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a661218fdb885cdd38f3b7b_img-logo-materials-experiment-10.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a66126ebf33efae2ee61ef4_img-logo-materials-experiment-01.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a6612086a5afe2ac40e2751_img-logo-materials-experiment-12.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a66120fe6997e7a1416aed6_img-logo-materials-experiment-11.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a661236098125f51a62decb_img-logo-materials-experiment-07.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a66124078c2488d88926aca_img-logo-materials-experiment-06.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a66122768d93d23da015658_img-logo-materials-experiment-09.avif",
-    "https://cdn.prod.website-files.com/6a36a3fb2e061ee276a4e112/6a6611fd4db67bc41e1ffae3_img-logo-materials-experiment-13.avif",
-  ];
-
   return (
     <footer
       id="w-node-a204f672-ea1b-c502-70d3-3fa0032bc8db-032bc8db"
@@ -44,55 +30,6 @@ export default function Footer() {
             </h1>
             <h1 data-reveal="text" className="h1">
               {profile.footerQuote.line4}
-            </h1>
-          </div>
-
-          {/* Live Clock & Materials Carousel */}
-          <div
-            id="w-node-_213460a0-6380-6d65-6b0f-fd3acdaa218e-032bc8db"
-            className="footer-time"
-          >
-            <h1
-              data-reveal="text"
-              id="w-node-_157a5a4e-7569-22a7-457a-9c1b331b2982-032bc8db"
-              className="h1 is-desktop"
-            >
-              (
-            </h1>
-            <FooterHours
-              id="w-node-_7ca5700c-b458-a30e-59bf-d4e05ebb478b-032bc8db"
-              className="h1"
-            />
-            <h1
-              data-reveal="text"
-              id="w-node-be8336b7-b244-3f21-53f7-49695207e6e1-032bc8db"
-              className="h1 is-desktop"
-            >
-              )
-            </h1>
-            <div
-              id="w-node-f72de753-7ddd-b236-f650-3cfafb0e604b-032bc8db"
-              className="footer-time-inner"
-            >
-              <FooterLogo logos={materialsLogos} />
-            </div>
-            <h1
-              data-reveal="text"
-              id="w-node-_48f40b3e-3499-ddf0-fe35-2f88866d5fb0-032bc8db"
-              className="h1"
-            >
-              :
-            </h1>
-            <FooterMinutes
-              id="w-node-_420f084b-ac62-c608-af37-250aeb96832a-032bc8db"
-              className="h1"
-            />
-            <h1
-              data-reveal="text"
-              id="w-node-a3109718-9166-bfda-4238-04d33411177e-032bc8db"
-              className="h1"
-            >
-              :
             </h1>
           </div>
 

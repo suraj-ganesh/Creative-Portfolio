@@ -104,10 +104,15 @@ function toEls(target: AnyTarget, scope: ParentNode = document): HTMLElement[] {
 /* Primitive animators                                                 */
 /* ------------------------------------------------------------------ */
 
-/** Simplified vs legacy: legacy used a gooey SVG-blur per line (feGaussianBlur
- *  + feColorMatrix animated 50->0). Replaced with a masked line rise
- *  (yPercent 110 -> 0, DUR.M, stagger DUR.STAGGER) — same one-shot feel,
- *  no per-line SVG filters, no display:none juggling. */
+/** Text reveal with a glyph-morph feel: lines rise from their mask while
+ *  heavily blurred + vertically stretched (the "different shape"), then
+ *  snap into crisp focus as they land. One-shot feel preserved —
+ *  masked rise (DUR.M, stagger DUR.STAGGER), blur resolving with it. */
+const GOO_BLUR_ID = "text-goo-blur";
+function gooBlurNode(): SVGElement | null {
+  if (typeof document === "undefined") return null;
+  return document.getElementById(GOO_BLUR_ID) as unknown as SVGElement | null;
+}
 export function animateTextReveal(
   target: AnyTarget,
   mode: Mode,
@@ -135,12 +140,28 @@ export function animateTextReveal(
     const d = delay + groupIdx * DUR.STAGGER;
     if (mode === "initial") {
       gsap.set(host, { autoAlpha: 1, visibility: "visible" });
-      gsap.set(lines, { yPercent: 110 });
+      gsap.set(lines, {
+        yPercent: 110,
+        filter: "blur(16px)",
+        scaleY: 1.35,
+        transformOrigin: "50% 100%",
+      });
+      // Melt the heading into one ink blob via the shared goo filter;
+      // the reveal pass below tightens it back into sharp glyphs.
+      gsap.set(host, { filter: "url(#text-goo)" });
+      const bn = gooBlurNode();
+      if (bn && !gsap.isTweening(bn)) {
+        gsap.set(bn, { attr: { stdDeviation: 10 } });
+      }
     } else if (mode === "reveal") {
       gsap.set(host, { autoAlpha: 1, visibility: "visible" });
+      // Re-assert: a finished sibling group may have cleared the shared goo.
+      gsap.set(host, { filter: "url(#text-goo)" });
       trackTw(
         gsap.to(lines, {
           yPercent: 0,
+          filter: "blur(0px)",
+          scaleY: 1,
           duration: DUR.M,
           delay: d,
           stagger: DUR.STAGGER,
@@ -148,10 +169,32 @@ export function animateTextReveal(
           overwrite: true,
         }),
       );
+      const bn = gooBlurNode();
+      if (bn) {
+        trackTw(
+          gsap.to(bn, {
+            attr: { stdDeviation: 0 },
+            duration: DUR.M + 0.35,
+            delay: d,
+            ease: "power2.inOut",
+            overwrite: true,
+            onComplete: () => {
+              // Deviation is shared: completion means every goo pass is
+              // done, so release all text hosts (not just this batch).
+              qa<HTMLElement>('[data-reveal="text"]', scope).forEach((e2) =>
+                gsap.set(e2, { clearProps: "filter" }),
+              );
+            },
+          }),
+        );
+      }
     } else {
+      gsap.set(host, { clearProps: "filter" });
       trackTw(
         gsap.to(lines, {
           yPercent: -110,
+          filter: "blur(12px)",
+          scaleY: 1.2,
           duration: DUR.S,
           delay,
           stagger: DUR.STAGGER * 0.5,
@@ -428,6 +471,18 @@ export function revealNow(scope: ParentNode = document): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Serial staging: any reveal hook may carry data-reveal-delay="0.65" to  */
+/* join a choreographed entrance cascade instead of firing with the pack. */
+/* ------------------------------------------------------------------ */
+
+function stagedDelay(el: HTMLElement, fallback: number): number {
+  const raw = el.getAttribute("data-reveal-delay");
+  if (raw === null) return fallback;
+  const v = parseFloat(raw);
+  return Number.isFinite(v) && v >= 0 ? v : fallback;
+}
+
+/* ------------------------------------------------------------------ */
 /* Section builders (all no-op when hooks absent)                       */
 /* ------------------------------------------------------------------ */
 
@@ -451,8 +506,10 @@ function wireTextReveals(scope: ParentNode, local: ScrollTrigger[]): void {
     gsap.set(el, { visibility: "visible" });
     animateTextReveal(el, "initial");
     // Legacy exact: start "top bottom", once, delay 0.1
+    // (data-reveal-delay overrides for staged cascades, e.g. hero).
+    const dl = stagedDelay(el, 0.1);
     local.push(
-      oneShot(el, "top bottom", () => animateTextReveal(el, "reveal", 0.1)),
+      oneShot(el, "top bottom", () => animateTextReveal(el, "reveal", dl)),
     );
   });
 }
@@ -469,8 +526,9 @@ function wireClipReveals(scope: ParentNode, local: ScrollTrigger[]): void {
     qa<HTMLElement>(`[data-reveal="${attr}"]`, scope).forEach((el) => {
       gsap.set(el, { visibility: "visible" });
       animateClipReveal(el, dir, "initial");
+      const dl = stagedDelay(el, 0.1);
       local.push(
-        oneShot(el, "top bottom", () => animateClipReveal(el, dir, "reveal", 0.1)),
+        oneShot(el, "top bottom", () => animateClipReveal(el, dir, "reveal", dl)),
       );
     });
   });
@@ -481,8 +539,9 @@ function wireDivReveals(scope: ParentNode, local: ScrollTrigger[]): void {
     const wrap = el.closest('[data-reveal="w"]') ?? el;
     gsap.set(el, { visibility: "visible" });
     animateDivReveal(el, "initial");
+    const dl = stagedDelay(el, 0.1);
     local.push(
-      oneShot(wrap, "top bottom", () => animateDivReveal(el, "reveal", 0.1)),
+      oneShot(wrap, "top bottom", () => animateDivReveal(el, "reveal", dl)),
     );
   });
 }
@@ -499,13 +558,14 @@ function wireWidthReveals(scope: ParentNode, local: ScrollTrigger[]): void {
       return;
     }
     gsap.set(el, { visibility: "visible", width: 0, overflow: "hidden" });
+    const dl = stagedDelay(el, 0.1);
     local.push(
       oneShot(el, "top bottom", () => {
         trackTw(
           gsap.to(el, {
             width: full,
             duration: DUR.L,
-            delay: 0.1,
+            delay: dl,
             ease: "power2.out",
             overwrite: true,
             onComplete: () => gsap.set(el, { clearProps: "width" }),
@@ -557,8 +617,12 @@ function wireLinks(scope: ParentNode): void {
 function wireLogoMorph(scope: ParentNode): void {
   const path = scope.querySelector<HTMLElement>("[data-morph-final]");
   if (!path) return;
+  // Empty data-morph-final means "morph from the reveal rect into the
+  // path's own shape" — fall back to the inlined d attribute.
   const final =
-    path.dataset.morphFinal ?? path.getAttribute("d") ?? undefined;
+    path.dataset.morphFinal ||
+    path.getAttribute("d") ||
+    undefined;
   if (final && !path.dataset.morphFinal) path.dataset.morphFinal = final;
   const wrap = scope.querySelector<HTMLElement>(".icon-wrap");
   if (!wrap || !final) return;

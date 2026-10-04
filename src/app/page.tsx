@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
 export const metadata: Metadata = {
-  title: `${profile.lastName.toLowerCase()} - ${profile.role}`,
+  title: "Suraj Ganesh",
   description: profile.heroBio,
 };
 

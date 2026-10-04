@@ -25,6 +25,9 @@ interface GlobeCard {
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   mat: THREE.MeshBasicMaterial;
   slug: string;
+  /** Backing video element for video cards (null for image cards).
+   *  Used to unmute the focused card so it plays WITH sound. */
+  vid: HTMLVideoElement | null;
   origPos: THREE.Vector3;
   origDir: THREE.Vector3;
   origQuat: THREE.Quaternion;
@@ -219,7 +222,17 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   };
 
   const unpin = () => {
-    if (pinned) pinned.pinned = false;
+    if (pinned) {
+      pinned.pinned = false;
+      // Stop that card's audio when it leaves focus.
+      if (pinned.vid) {
+        try {
+          pinned.vid.muted = true;
+        } catch {
+          /* noop */
+        }
+      }
+    }
     pinned = null;
   };
   const resetView = () => {
@@ -248,13 +261,34 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     dir: THREE.Vector3,
     slug: string,
     done: () => void,
+    vid: HTMLVideoElement | null = null,
   ) => {
     tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     tex.generateMipmaps = true;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
-    const img = tex.image as { width?: number; height?: number } | undefined;
-    const iw = img?.width || 1600;
-    const ih = img?.height || 900;
+    // Color textures are authored in sRGB. Without this flag three
+    // samples them as linear and re-encodes on output, which renders
+    // every card brighter/washed-out ("overexposed"). Marking both
+    // image and video textures as sRGB keeps original colors.
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const img = tex.image as
+      | (HTMLImageElement | HTMLVideoElement)
+      | { width?: number; height?: number }
+      | undefined;
+    // Preserve the source's native aspect so vertical 9:16 clips stay
+    // tall and narrow. Video elements expose videoWidth/videoHeight
+    // (`.width` is just the layout attribute), images expose
+    // naturalWidth/naturalHeight — fall back to width/height last.
+    const iw =
+      (img as HTMLVideoElement)?.videoWidth ||
+      (img as HTMLImageElement)?.naturalWidth ||
+      img?.width ||
+      1600;
+    const ih =
+      (img as HTMLVideoElement)?.videoHeight ||
+      (img as HTMLImageElement)?.naturalHeight ||
+      img?.height ||
+      900;
     const h = CARD_W / (iw / ih);
     const pos = dir.clone().multiplyScalar(RADIUS);
     const geo = new THREE.PlaneGeometry(CARD_W, h);
@@ -292,6 +326,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
       mesh,
       mat,
       slug,
+      vid,
       origPos: pos.clone(),
       origDir: pos.clone().normalize(),
       origQuat: mesh.quaternion.clone(),
@@ -511,6 +546,28 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   const items = db
     ? Array.from(db.querySelectorAll<HTMLElement>('[data-globe="img"]'))
     : [];
+  // Videos backing VideoTextures (muted inline playback, started on reveal).
+  const cardVideos = new Set<HTMLVideoElement>();
+  const playCardVideos = () => {
+    cardVideos.forEach((v) => {
+      try {
+        const p = v.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* autoplay blocked — poster frame stays */
+      }
+    });
+  };
+  const pauseCardVideos = () => {
+    cardVideos.forEach((v) => {
+      try {
+        v.muted = true;
+        v.pause();
+      } catch {
+        /* noop */
+      }
+    });
+  };
   if (db) {
     Object.assign(db.style, {
       position: "absolute",
@@ -527,15 +584,62 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     const dirs = fibSphere(Math.ceil(2.5 * items.length))
       .filter((v) => Math.abs(v.y) < 0.55)
       .slice(0, items.length);
+    const loadVideoCard = (
+      vid: HTMLVideoElement,
+      poster: string | null,
+      dir: THREE.Vector3,
+      slug: string,
+      done: () => void,
+    ) => {
+      cardVideos.add(vid);
+      const tex = new THREE.VideoTexture(vid);
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (ok) {
+          addCard(tex, dir, slug, done, vid);
+        } else {
+          cardVideos.delete(vid);
+          try {
+            tex.dispose();
+          } catch {
+            /* noop */
+          }
+          if (poster) {
+            loader.load(
+              poster,
+              (t) => addCard(t, dir, slug, done, null),
+              undefined,
+              () => done(),
+            );
+          } else done();
+        }
+      };
+      if (vid.readyState >= 2 && vid.videoWidth > 0) finish(true);
+      else {
+        vid.addEventListener("canplay", () => finish(true), { once: true });
+        vid.addEventListener("error", () => finish(false), { once: true });
+        window.setTimeout(() => finish(vid.readyState >= 2), 15000);
+      }
+    };
     items.forEach((item, idx) => {
       const dir = dirs[idx];
+      if (!dir) return;
       const img = item.querySelector("img");
-      if (!dir || !img) return;
+      const vid = item.querySelector("video");
       const slug = (
         item.getAttribute("data-works-database") ||
-        img.getAttribute("data-works-database") ||
+        img?.getAttribute("data-works-database") ||
+        vid?.getAttribute("data-works-database") ||
         ""
       ).trim();
+      if (vid && vid.getAttribute("src")) {
+        const poster = img ? pickSrc(img, 1024) : null;
+        queue.push((done) => loadVideoCard(vid, poster, dir, slug, done));
+        return;
+      }
+      if (!img) return;
       const url = pickSrc(img, 1024);
       if (!url) return;
       queue.push((done) => {
@@ -600,6 +704,26 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
       hit.pinned = true;
       hit.cooldown = 0;
       pinned = hit;
+      // The click is a user gesture, so the focused card may play WITH
+      // sound. All sphere videos stay muted until pinned.
+      if (hit.vid) {
+        try {
+          hit.vid.muted = false;
+          hit.vid.volume = 1;
+          const attempt = hit.vid.play();
+          if (attempt && typeof attempt.catch === "function") {
+            attempt.catch(() => {
+              try {
+                hit.vid!.muted = true;
+              } catch {
+                /* stay muted */
+              }
+            });
+          }
+        } catch {
+          /* stay muted */
+        }
+      }
       showInfo(hit.slug);
     } else if (pinned) {
       resetView();
@@ -651,6 +775,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     } else if (mode === "reveal") {
       killReveal();
       globeState = "revealing";
+      playCardVideos();
       const w = clientW();
       const h = clientH();
       if (w > 0 && h > 0) {
@@ -704,6 +829,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     } else {
       killReveal();
       resetView();
+      pauseCardVideos();
       globeState = "hiding";
       if (!reduced) start();
       const order = cards
@@ -787,6 +913,8 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   function teardown() {
     killReveal();
     stop();
+    pauseCardVideos();
+    cardVideos.clear();
     io.disconnect();
     ro.disconnect();
     queue.length = 0;

@@ -52,22 +52,4 @@ export const awardsData: AwardGroup[] = [
       },
     ],
   },
-  {
-    year: "'24",
-    project: "Certifications",
-    awards: [
-      {
-        platform: "Certified",
-        title: "Video Editing Fundamentals",
-      },
-      {
-        platform: "Certified",
-        title: "Motion Graphics Essentials",
-      },
-      {
-        platform: "Certified",
-        title: "Color Correction",
-      },
-    ],
-  },
 ];

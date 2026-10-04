@@ -1,6 +1,67 @@
-import { projects } from "@/data/projects";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { projects, type Project } from "@/data/projects";
+import VideoLightbox from "@/components/work/VideoLightbox";
+
+function playPreview(wrap: HTMLElement | null) {
+  const video = wrap?.querySelector<HTMLVideoElement>("video");
+  if (!video || !video.paused) return;
+  video.muted = true;
+  const attempt = video.play();
+  if (attempt && typeof attempt.catch === "function") {
+    attempt.catch(() => {});
+  }
+}
+
+function pausePreview(wrap: HTMLElement | null) {
+  const video = wrap?.querySelector<HTMLVideoElement>("video");
+  if (video && !video.paused) {
+    try {
+      video.pause();
+    } catch {
+      /* noop */
+    }
+  }
+}
 
 export default function WorkGrid() {
+  const [active, setActive] = useState<Project | null>(null);
+  const closeLightbox = useCallback(() => setActive(null), []);
+
+  // Pause card previews hidden by the Cards/Sphere filter so background
+  // tabs never decode video needlessly.
+  useEffect(() => {
+    const containers = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-filter-content]"),
+    );
+    if (!containers.length) return;
+    const pauseHidden = () => {
+      containers.forEach((c) => {
+        if (c.style.display === "none") {
+          c.querySelectorAll<HTMLVideoElement>("video").forEach((v) => {
+            try {
+              v.pause();
+            } catch {
+              /* noop */
+            }
+          });
+        }
+      });
+    };
+    const observer = new MutationObserver(pauseHidden);
+    containers.forEach((c) =>
+      observer.observe(c, { attributes: true, attributeFilter: ["style"] }),
+    );
+    return () => observer.disconnect();
+  }, []);
+
+  const openPlayer = (e: React.MouseEvent, project: Project) => {
+    e.preventDefault();
+    if (!project.videoSrc) return;
+    setActive(project);
+  };
+
   return (
     <section className="works">
       <div className="works-overlay">
@@ -20,7 +81,7 @@ export default function WorkGrid() {
             className="works-overlay-right"
           >
             <div data-reveal="text" className="h1">
-              25
+              26
             </div>
           </div>
         </div>
@@ -104,41 +165,63 @@ export default function WorkGrid() {
                   id="w-node-_019a10b8-2b38-475b-0c97-40a12d4b0193-3f92bac2"
                   role="listitem"
                   className="works-item w-dyn-item"
+                  onMouseEnter={(e) => playPreview(e.currentTarget)}
+                  onMouseLeave={(e) => pausePreview(e.currentTarget)}
                 >
                   <a
                     className="works-item-link-overlay w-inline-block"
-                    href={`/works/${project.slug}`}
+                    href="#work"
+                    aria-label={`${project.title} — play video`}
+                    onClick={(e) => openPlayer(e, project)}
                   ></a>
                   <div className="works-item-image-wrap" data-tilt="card">
                     <div className="works-item-image-inner">
-                      <img
-                        alt={project.title}
-                        loading="lazy"
-                        src={project.coverImage}
-                        className="img is-cover-works"
-                      />
+                      {project.videoSrc ? (
+                        <video
+                          src={project.videoSrc}
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          aria-label={project.title}
+                          className="img is-cover-works"
+                          style={{
+                            objectFit: "contain",
+                            height: "100%",
+                            width: "100%",
+                            background: "#000",
+                          }}
+                        />
+                      ) : (
+                        <img
+                          alt={project.title}
+                          loading="lazy"
+                          src={project.coverImage}
+                          className="img is-cover-works"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="works-item-meta">
-                    <div className="works-type">
-                      <div className="p1">{project.type}</div>
-                    </div>
                     <div className="p1">{project.title}</div>
                   </div>
                   <div className="works-item-button" data-works-item="button">
-                    <a
+                    <button
+                      type="button"
                       className="button w-inline-block"
-                      href={`/works/${project.slug}`}
+                      aria-label={`${project.title} — play video`}
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => openPlayer(e, project)}
                     >
                       <div className="link-inner">
                         <div data-link="label" className="p1">
-                          Explore
+                          Play
                         </div>
                         <div data-link="shadow" className="p1 is-2">
-                          Explore
+                          Play
                         </div>
                       </div>
-                    </a>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -162,12 +245,6 @@ export default function WorkGrid() {
                           className="works-globe-info-ltem w-dyn-item"
                         >
                           <div className="w-layout-grid grid">
-                            <div
-                              id="w-node-_90f66e8c-5a21-39e6-c6c6-8fa4f24a1122-3f92bac2"
-                              className="works-type is-on-bg"
-                            >
-                              <div className="p1">{project.type}</div>
-                            </div>
                             <div
                               id="w-node-_72e5e985-1a86-dcb2-f1cc-0b1790b33bf1-3f92bac2"
                               className="p1"
@@ -204,20 +281,24 @@ export default function WorkGrid() {
                                 +0
                               </div>
                             </div>
-                            <a
-                              id="w-node-f5f57a69-a8fc-d06f-3695-40fd9926651d-3f92bac2"
-                              href={`/works/${project.slug}`}
-                              className="button is-on-bg w-inline-block"
-                            >
-                              <div className="link-inner">
-                                <div data-link="label" className="p1">
-                                  Explore
+                            {project.videoSrc && (
+                              <button
+                                type="button"
+                                onClick={() => setActive(project)}
+                                aria-label={`${project.title} — play video with sound`}
+                                className="button is-on-bg w-inline-block"
+                                style={{ cursor: "pointer", marginTop: 8 }}
+                              >
+                                <div className="link-inner">
+                                  <div data-link="label" className="p1">
+                                    Play with sound
+                                  </div>
+                                  <div data-link="shadow" className="p1 is-2">
+                                    Play with sound
+                                  </div>
                                 </div>
-                                <div data-link="shadow" className="p1 is-2">
-                                  Explore
-                                </div>
-                              </div>
-                            </a>
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -246,6 +327,16 @@ export default function WorkGrid() {
                         role="listitem"
                         className="globe-database-item w-dyn-item"
                       >
+                        {p.videoSrc && (
+                          <video
+                            src={p.videoSrc}
+                            poster={p.coverImage}
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                          />
+                        )}
                         <img
                           src={p.coverImage}
                           loading="lazy"
@@ -269,6 +360,10 @@ export default function WorkGrid() {
           </div>
         </div>
       </div>
+
+      {active && active.videoSrc && (
+        <VideoLightbox project={active} onClose={closeLightbox} />
+      )}
     </section>
   );
 }

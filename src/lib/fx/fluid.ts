@@ -235,6 +235,10 @@ function initOne(host: FluidHost): Cleanup | null {
   const classObs = new MutationObserver(() => {
     recolorUntil = performance.now() + RECOLOR_MS;
   });
+  // Theme classes live on <html> (see lib/theme + layout bootstrap);
+  // watching body alone misses every theme swap, leaving the hero
+  // background stuck on the old theme until scroll re-triggers a read.
+  classObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   classObs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
   let gl = glCanvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false }) as WebGL2RenderingContext | null;

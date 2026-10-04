@@ -1,7 +1,8 @@
 import { projects } from "@/data/projects";
 
 export default function FeaturedWork() {
-  const globeProjects = projects.filter((p) => p.coverImage);
+  // Work-only projects (hideFromHome) never appear on the home page.
+  const globeProjects = projects.filter((p) => p.coverImage && !p.hideFromHome);
 
   return (
     <>
@@ -13,7 +14,7 @@ export default function FeaturedWork() {
               Work
             </div>
             <div data-featured="text" data-reveal="text" className="h1">
-              24-25
+              24-26
             </div>
             <div data-featured="link" className="featured-link-wrap">
               <a
@@ -47,6 +48,16 @@ export default function FeaturedWork() {
                     role="listitem"
                     className="globe-database-item w-dyn-item"
                   >
+                    {p.videoSrc && (
+                      <video
+                        src={p.videoSrc}
+                        poster={p.coverImage}
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                      />
+                    )}
                     <img
                       src={p.coverImage}
                       loading="eager"
@@ -69,7 +80,7 @@ export default function FeaturedWork() {
               Work
             </div>
             <div m-data-featured="text" data-reveal="text" className="h1">
-              24-25
+              24-26
             </div>
             <div m-data-featured="link" className="m-featured-link-wrap">
               <a
