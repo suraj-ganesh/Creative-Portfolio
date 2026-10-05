@@ -73,12 +73,12 @@ export const profile: Profile = {
   phone: "+977 9745867068",
   website: "surajganesh.com.np",
   socials: {
-    linkedin: "",
-    behance: "",
-    instagram: "",
-    facebook: "",
-    github: "",
-    x: "",
+    linkedin: "https://www.linkedin.com/in/suraj-ganesh-8313532aa/",
+    behance: "https://www.behance.net/surajganesh1",
+    instagram: "https://www.instagram.com/_suraj.ganesh_/",
+    facebook: "https://www.facebook.com/suraj.ganesh.50",
+    github: "https://github.com/suraj-ganesh",
+    x: "https://x.com/Parzavel568",
   },
   footerQuote: {
     line1: "Every",

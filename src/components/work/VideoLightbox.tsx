@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Project } from "@/data/projects";
 import { lenisStart, lenisStop } from "@/lib/fx/lenis";
+import { mediaUrl } from "@/lib/media";
 
 /**
  * Fullscreen video lightbox for the Work section. Opens on card press,
@@ -105,7 +106,7 @@ export default function VideoLightbox({
         <video
           ref={videoRef}
           key={project.videoSrc}
-          src={project.videoSrc}
+          src={mediaUrl(project.videoSrc)}
           controls
           autoPlay
           muted={false}

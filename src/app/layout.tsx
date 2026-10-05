@@ -40,8 +40,8 @@ export const metadata: Metadata = {
       "Video Editor producing broadcast-quality videos — color grading, motion graphics and audio mixing.",
   },
   icons: {
-    icon: "/images/hero-mark.png",
-    apple: "/images/hero-mark.png",
+    icon: "/images/hero-mark-icon.png",
+    apple: "/images/hero-mark-icon.png",
   },
 };
 
@@ -54,7 +54,7 @@ export default function RootLayout({
     <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.prod.website-files.com" />
-        <link rel="icon" type="image/png" href="/images/hero-mark.png" />
+        <link rel="icon" type="image/png" href="/images/hero-mark-icon.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

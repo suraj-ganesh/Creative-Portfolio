@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { projects, type Project } from "@/data/projects";
 import VideoLightbox from "@/components/work/VideoLightbox";
+import { mediaUrl } from "@/lib/media";
 
 function playPreview(wrap: HTMLElement | null) {
   const video = wrap?.querySelector<HTMLVideoElement>("video");
@@ -178,7 +179,7 @@ export default function WorkGrid() {
                     <div className="works-item-image-inner">
                       {project.videoSrc ? (
                         <video
-                          src={project.videoSrc}
+                          src={mediaUrl(project.videoSrc)}
                           muted
                           loop
                           playsInline
@@ -329,7 +330,7 @@ export default function WorkGrid() {
                       >
                         {p.videoSrc && (
                           <video
-                            src={p.videoSrc}
+                            src={mediaUrl(p.videoSrc)}
                             poster={p.coverImage}
                             muted
                             loop

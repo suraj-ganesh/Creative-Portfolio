@@ -20,11 +20,11 @@ const THEME_CLASS: Record<ThemeMode, string> = {
 };
 
 const FAVICON: Record<ThemeMode, string> = {
-  base: "/images/hero-mark.png",
-  "1": "/images/hero-mark.png",
-  "2": "/images/hero-mark.png",
-  "3": "/images/hero-mark.png",
-  "4": "/images/hero-mark.png",
+  base: "/images/hero-mark-icon.png",
+  "1": "/images/hero-mark-icon.png",
+  "2": "/images/hero-mark-icon.png",
+  "3": "/images/hero-mark-icon.png",
+  "4": "/images/hero-mark-icon.png",
 };
 
 const STORAGE_KEY = "theme-mode";

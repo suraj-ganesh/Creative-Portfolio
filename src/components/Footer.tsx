@@ -170,6 +170,108 @@ export default function Footer() {
                     </a>
                   </div>
                 )}
+                {profile.socials.github && (
+                  <div
+                    data-reveal="div"
+                    role="listitem"
+                    className="social-item w-dyn-item"
+                  >
+                    <a
+                      data-haptic="medium"
+                      href={profile.socials.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-item-inner w-inline-block"
+                      aria-label="GitHub"
+                    >
+                      <div className="icon-wrap is-15">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="100%"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          preserveAspectRatio="none"
+                          height="100%"
+                          className="svg"
+                        >
+                          <path
+                            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                            fill="currentColor"
+                            className="path"
+                          ></path>
+                        </svg>
+                      </div>
+                    </a>
+                  </div>
+                )}
+                {profile.socials.x && (
+                  <div
+                    data-reveal="div"
+                    role="listitem"
+                    className="social-item w-dyn-item"
+                  >
+                    <a
+                      data-haptic="medium"
+                      href={profile.socials.x}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-item-inner w-inline-block"
+                      aria-label="X"
+                    >
+                      <div className="icon-wrap is-15">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="100%"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          preserveAspectRatio="none"
+                          height="100%"
+                          className="svg"
+                        >
+                          <path
+                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"
+                            fill="currentColor"
+                            className="path"
+                          ></path>
+                        </svg>
+                      </div>
+                    </a>
+                  </div>
+                )}
+                {profile.socials.facebook && (
+                  <div
+                    data-reveal="div"
+                    role="listitem"
+                    className="social-item w-dyn-item"
+                  >
+                    <a
+                      data-haptic="medium"
+                      href={profile.socials.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-item-inner w-inline-block"
+                      aria-label="Facebook"
+                    >
+                      <div className="icon-wrap is-15">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="100%"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          preserveAspectRatio="none"
+                          height="100%"
+                          className="svg"
+                        >
+                          <path
+                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073Z"
+                            fill="currentColor"
+                            className="path"
+                          ></path>
+                        </svg>
+                      </div>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -194,7 +296,9 @@ export default function Footer() {
                 data-haptic="medium"
                 data-reveal="div"
                 data-link-trigger=""
-                href={`mailto:${profile.email}?subject=%5BProject%20Inquiry%5D%20Hello`}
+                href={`https://outlook.live.com/owa/?path=/mail/action/compose&to=${profile.email}&subject=%5BProject%20Inquiry%5D%20Hello`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="link-button left-offset w-inline-block"
               >
                 <div className="link-inner">

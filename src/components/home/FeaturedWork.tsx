@@ -1,4 +1,5 @@
 import { projects } from "@/data/projects";
+import { mediaUrl } from "@/lib/media";
 
 export default function FeaturedWork() {
   // Work-only projects (hideFromHome) never appear on the home page.
@@ -50,7 +51,7 @@ export default function FeaturedWork() {
                   >
                     {p.videoSrc && (
                       <video
-                        src={p.videoSrc}
+                        src={mediaUrl(p.videoSrc)}
                         poster={p.coverImage}
                         muted
                         loop

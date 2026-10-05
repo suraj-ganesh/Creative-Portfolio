@@ -653,6 +653,13 @@ html {
   touch-action: none;
   will-change: transform;
 }
+button.cg-pill {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
 .cg-pill:active {
   cursor: grabbing;
 }
@@ -696,6 +703,58 @@ html {
   height: 8.5vw;
   overflow: hidden;
   text-align: center;
+}
+
+/** -------------------------------------------------
+ * PHONE POPUP (contact)
+ * ------------------------------------------------- */
+.cg-phone-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 4vmin;
+}
+.cg-phone-card {
+  background: var(--_colors---background--bg);
+  color: var(--_colors---content--primary);
+  border: var(--_special-units---stroke) solid var(--_colors---fill--primary);
+  border-radius: 1.6rem;
+  padding: 2.8rem 3.2rem;
+  text-align: center;
+  min-width: min(26rem, 88vw);
+}
+.cg-phone-label {
+  opacity: 0.55;
+  margin-bottom: 1.2rem;
+}
+.cg-phone-number {
+  font-family: var(--_fonts---font-display);
+  font-weight: 500;
+  font-size: 2.6rem;
+  letter-spacing: 0.01em;
+  user-select: all;
+}
+.cg-phone-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.cg-phone-btn {
+  cursor: pointer;
+  padding: 0.85em 1.9em;
+  border-radius: 999px;
+  border: var(--_special-units---stroke) solid var(--_colors---fill--primary);
+  background: var(--_colors---fill--primary);
+  color: var(--_colors---background--bg);
+}
+.cg-phone-btn.is-ghost {
+  background: transparent;
+  color: var(--_colors---content--primary);
 }
 main[data-page="contact"] ~ .sticky-name {
   display: none;

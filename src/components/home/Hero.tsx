@@ -5,6 +5,7 @@ import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
 import { defaultOrbitCards, type OrbitCard } from "@/data/orbitTiles";
 import { useTheme } from "@/lib/theme";
+import { mediaUrl } from "@/lib/media";
 
 const HERO_MARK_SRC = "/images/hero-mark.png";
 const HERO_MARK_WHITE_SRC = "/images/hero-mark-white.png";
@@ -334,7 +335,7 @@ export default function Hero() {
                     >
                       {card.videoSrc ? (
                         <video
-                          src={card.videoSrc}
+                          src={mediaUrl(card.videoSrc)}
                           poster={card.image}
                           muted
                           loop
@@ -419,7 +420,7 @@ export default function Hero() {
             </div>
             <video
               key={activeCard.videoSrc}
-              src={activeCard.videoSrc}
+              src={mediaUrl(activeCard.videoSrc)}
               poster={activeCard.image}
               controls
               autoPlay
