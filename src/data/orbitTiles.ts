@@ -14,7 +14,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Draw With Me (part1)",
     image:
-      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80&auto=format&fit=crop",
+      "/images/posters/social-media-campaign.jpg",
     link: "/works/social-media-campaign",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part1%29.mp4",
     aspect: "9:16",
@@ -22,7 +22,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Draw With Me (part2)",
     image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80&auto=format&fit=crop",
+      "/images/posters/product-promo-video.jpg",
     link: "/works/product-promo-video",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part2%29.mp4",
     aspect: "9:16",
@@ -30,7 +30,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Tech Team Intro",
     image:
-      "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=800&q=80&auto=format&fit=crop",
+      "/images/posters/color-grading-showcase.jpg",
     link: "/works/color-grading-showcase",
     videoSrc: "/Videos/Tech%20Team%20Intro.mp4",
     aspect: "9:16",
@@ -38,7 +38,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Aastha Paperflies Promo",
     image:
-      "https://images.unsplash.com/photo-1601506521937-0121a7fc2a6b?w=800&q=80&auto=format&fit=crop",
+      "/images/posters/motion-graphics-package.jpg",
     link: "/works/motion-graphics-package",
     videoSrc: "/Videos/Aastha%20Paperflies%20Promo.mp4",
     aspect: "9:16",

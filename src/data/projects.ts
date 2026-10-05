@@ -25,7 +25,7 @@ export const projects: Project[] = [
     category: "Short-form Promo & Social",
     year: "'25",
     coverImage:
-      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/social-media-campaign.jpg",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part1%29.mp4",
     description:
       "Produced and edited a series of short-form promotional videos designed to increase audience engagement across digital platforms.",
@@ -40,7 +40,7 @@ export const projects: Project[] = [
     category: "Commercial & Promo",
     year: "'25",
     coverImage:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/product-promo-video.jpg",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part2%29.mp4",
     description:
       "Produced a short promotional video showing a product's features and benefits, with sound design and call-to-action graphics.",
@@ -55,7 +55,7 @@ export const projects: Project[] = [
     category: "Color Correction & Grading",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/color-grading-showcase.jpg",
     videoSrc: "/Videos/Tech%20Team%20Intro.mp4",
     description:
       "Graded footage in DaVinci Resolve to set a cinematic mood, match shots and deliver a consistent final look.",
@@ -69,7 +69,7 @@ export const projects: Project[] = [
     category: "Motion Design",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1601506521937-0121a7fc2a6b?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/motion-graphics-package.jpg",
     videoSrc: "/Videos/Aastha%20Paperflies%20Promo.mp4",
     description:
       "Animated titles, lower-thirds and call-to-action graphics in After Effects for digital channels and brand campaigns.",
@@ -83,7 +83,7 @@ export const projects: Project[] = [
     category: "Audio Editing & Mixing",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/audio-mix-sound-design.jpg",
     videoSrc: "/Videos/Product%20Design%20Explaination.mp4",
     description:
       "Dialogue cleanup, music-bed mixing and sound design to deliver broadcast-quality final outputs on deadline.",
@@ -97,7 +97,7 @@ export const projects: Project[] = [
     category: "Brand & Storytelling",
     year: "'25",
     coverImage:
-      "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/brand-story-edit.jpg",
     videoSrc: "/Videos/Salina%20Bhattrai%20Testimonial.mp4",
     description:
       "Collaborated with creative teams to align visual storytelling with brand guidelines and audience expectations for Kharaayo Inc.",
@@ -112,7 +112,7 @@ export const projects: Project[] = [
     category: "Narrative & Pacing",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/short-film-cut.jpg",
     videoSrc: "/Videos/Digital%20Marketing%20Workshop.mp4",
     description:
       "Edited a short narrative piece — pacing, continuity and dialogue rhythm cut in Premiere Pro with temp sound design.",
@@ -126,7 +126,7 @@ export const projects: Project[] = [
     category: "Vlog & Social",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/travel-vlog-edit.jpg",
     videoSrc: "/Videos/Gyan%20Singh%20Rajbanshi%20Testimonial.mp4",
     description:
       "Fast-paced travel vlog edit with beat-synced cuts, speed ramps and a warm cinematic grade.",
@@ -140,7 +140,7 @@ export const projects: Project[] = [
     category: "Educational",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/tutorial-course-edit.jpg",
     videoSrc: "/Videos/Digital%20Marketing%20Workshop%20Announcement.mp4",
     description:
       "Clean tutorial edit — filler removal, zoom callouts and chapter pacing for an online course module.",
@@ -154,7 +154,7 @@ export const projects: Project[] = [
     category: "Documentary & Social",
     year: "'25",
     coverImage:
-      "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/bts-edit.jpg",
     videoSrc: "/Videos/Ayush%20Shah%20Workshop.mp4",
     description:
       "Candid behind-the-scenes cut assembled from multi-cam coverage for social release.",
@@ -169,7 +169,7 @@ export const projects: Project[] = [
     category: "Promo & Practice",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/trailer-recut.jpg",
     videoSrc: "/Videos/Design%20pattern%20with%20API%20Workshop.mp4",
     description:
       "Practice trailer recut — restructuring existing footage into a 45-second tension arc with new sound design.",
@@ -183,7 +183,7 @@ export const projects: Project[] = [
     category: "Commercial & Promo",
     year: "'24",
     coverImage:
-      "https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=1200&q=80&auto=format&fit=crop",
+      "/images/posters/marketing-promo-edit.jpg",
     videoSrc: "/Videos/Classmate%20Scribble%20with%20Me.mp4",
     description:
       "Promo cut for a marketing campaign — offer pacing, kinetic text callouts and a hard-CTA ending.",

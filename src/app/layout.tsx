@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     siteName: "surajganesh",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1200&q=80&auto=format&fit=crop",
+        url: "https://surajganesh.com.np/images/posters/color-grading-showcase.jpg",
         width: 1200,
         height: 620,
       },

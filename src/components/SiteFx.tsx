@@ -46,9 +46,27 @@ function safe(name: string, init: () => () => void): () => void {
 }
 
 function scrollTopImmediate() {
-  const lenis = getLenis();
-  if (lenis) lenis.scrollTo(0, { immediate: true });
-  else window.scrollTo(0, 0);
+  // Lenis ignores programmatic scrolls while stopped — force it, fall
+  // back to native, and verify on the next frame. A failed reset here
+  // used to strand new pages mid-scroll with no further recovery.
+  try {
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+    else window.scrollTo(0, 0);
+  } catch {
+    try {
+      window.scrollTo(0, 0);
+    } catch {
+      /* ignore */
+    }
+  }
+  requestAnimationFrame(() => {
+    try {
+      if (window.scrollY > 2) window.scrollTo(0, 0);
+    } catch {
+      /* ignore */
+    }
+  });
 }
 
 /** Native replacement for the Barba fade/blur page transition. */
@@ -103,6 +121,32 @@ export default function SiteFx() {
       lenisStart();
       return;
     }
+    // Safety net: if the fade-in tween is ever killed before completing,
+    // the page would sit invisible with scroll locked. Force recovery.
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      lenisStart();
+    };
+    const safety = window.setTimeout(() => {
+      if (!root.isConnected) {
+        finish();
+        return;
+      }
+      try {
+        gsap.killTweensOf(root);
+        gsap.set(root, { clearProps: "filter,opacity,visibility" });
+      } catch {
+        /* ignore */
+      }
+      try {
+        ScrollTrigger.refresh();
+      } catch {
+        /* ignore */
+      }
+      finish();
+    }, 2500);
     gsap.fromTo(
       root,
       { filter: "blur(12px)", autoAlpha: 0 },
@@ -113,7 +157,15 @@ export default function SiteFx() {
         ease: "power2.out",
         overwrite: "auto",
         clearProps: "filter,opacity,visibility",
-        onComplete: () => lenisStart(),
+        onComplete: () => {
+          window.clearTimeout(safety);
+          try {
+            ScrollTrigger.refresh();
+          } catch {
+            /* ignore */
+          }
+          finish();
+        },
       },
     );
   }, []);
@@ -161,9 +213,24 @@ export default function SiteFx() {
     if (!readyRef.current) return;
     const wasTransition = pendingRef.current !== null;
     pendingRef.current = null;
-    teardownPage();
+    // A throw anywhere below used to strand the new page (hidden reveals,
+    // stopped scroll). Isolate each stage so the page always ends usable.
+    try {
+      updateNavIndicators();
+    } catch {
+      /* ignore */
+    }
+    try {
+      teardownPage();
+    } catch {
+      /* ignore */
+    }
     scrollTopImmediate();
-    initPage();
+    try {
+      initPage();
+    } catch {
+      /* ignore */
+    }
     if (wasTransition) enter();
     else lenisStart();
   }, [pathname, teardownPage, initPage, enter]);
