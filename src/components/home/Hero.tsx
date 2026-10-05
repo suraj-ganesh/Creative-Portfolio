@@ -97,7 +97,7 @@ export default function Hero() {
             className="progress-wrap"
           >
             <div
-              data-reveal="div"
+              data-logo-goo=""
               data-reveal-delay="0.45"
               className="icon-wrap is-logo"
             >
@@ -141,37 +141,13 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Name & Agency Meta */}
+          {/* Name headings (empty meta spacer preserves the original
+              44.25vh drop so the name sits at the bottom on load) */}
           <div
             id="w-node-_1b6f1581-6773-0695-794b-998a67dcf734-ef9a5cf3"
             className="hero-heading-wrap"
           >
-            <div className="hero-meta">
-              <div data-preloader="text-2" className="p1">
-                {profile.location}
-                <br />
-              </div>
-              <div className="hero-meta-inner">
-                <div data-preloader="text-2" className="p1">
-                  Working w/<br />
-                </div>
-                <a
-                  data-preloader="text-2"
-                  data-link-trigger=""
-                  href={profile.company.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="link-inner events-auto pointer w-inline-block"
-                >
-                  <div data-link="label" className="p1">
-                    {profile.company.name}
-                  </div>
-                  <div data-link="shadow" className="p1 is-2">
-                    {profile.company.name}
-                  </div>
-                </a>
-              </div>
-            </div>
+            <div className="hero-meta" aria-hidden="true" />
             <div className="heading-group-wrap">
               <h1 data-reveal="text" data-reveal-delay="0.55" className="h1">
                 {profile.firstName}

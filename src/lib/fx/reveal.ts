@@ -113,6 +113,100 @@ function gooBlurNode(): SVGElement | null {
   if (typeof document === "undefined") return null;
   return document.getElementById(GOO_BLUR_ID) as unknown as SVGElement | null;
 }
+const LOGO_GOO_BLUR_ID = "logo-goo-blur";
+function logoGooBlurNode(): SVGElement | null {
+  if (typeof document === "undefined") return null;
+  return document.getElementById(LOGO_GOO_BLUR_ID) as unknown as SVGElement | null;
+}
+/** Hero-mark goo morph: the logo starts as a wobbling ink blob (melted
+ *  by its own goo filter + squashed/rotated) and settles into the crisp
+ *  mark — the same blob-to-form language as the text morph. */
+export function animateLogoGoo(
+  target: AnyTarget,
+  mode: Mode,
+  delay = 0.45,
+  scope: ParentNode = document,
+): void {
+  const els = toEls(target, scope);
+  if (!els.length) return;
+  const bn = logoGooBlurNode();
+  if (mode === "initial") {
+    if (bn) gsap.set(bn, { attr: { stdDeviation: 14 } });
+    els.forEach((el) => {
+      gsap.set(el, {
+        autoAlpha: 1,
+        visibility: "visible",
+        filter: "url(#logo-goo)",
+        scaleX: 1.6,
+        scaleY: 0.45,
+        rotation: -12,
+        transformOrigin: "50% 50%",
+      });
+    });
+  } else if (mode === "reveal") {
+    els.forEach((el) => {
+      gsap.set(el, { autoAlpha: 1, visibility: "visible" });
+      const tl = gsap.timeline({
+        delay,
+        onComplete: () => {
+          gsap.set(el, { clearProps: "filter,transform" });
+        },
+      });
+      tl.to(el, {
+        scaleX: 0.75,
+        scaleY: 1.35,
+        rotation: 9,
+        duration: 0.45,
+        ease: "power2.out",
+        overwrite: true,
+      })
+        .to(el, {
+          scaleX: 1.18,
+          scaleY: 0.88,
+          rotation: -5,
+          duration: 0.42,
+          ease: "power2.inOut",
+        })
+        .to(el, {
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+          duration: DUR.L + 0.3,
+          ease: "elastic.out(1, 0.42)",
+        });
+      trackTw(tl);
+    });
+    if (bn) {
+      trackTw(
+        gsap.to(bn, {
+          attr: { stdDeviation: 0 },
+          duration: DUR.M + 0.9,
+          delay,
+          ease: "power2.inOut",
+          overwrite: true,
+          onComplete: () => {
+            qa<HTMLElement>("[data-logo-goo]", scope).forEach((e2) =>
+              gsap.set(e2, { clearProps: "filter,transform" }),
+            );
+          },
+        }),
+      );
+    } else {
+      els.forEach((el) => gsap.set(el, { clearProps: "filter,transform" }));
+    }
+  } else {
+    els.forEach((el) => gsap.set(el, { clearProps: "filter,transform" }));
+    trackTw(
+      gsap.to(els, {
+        opacity: 0,
+        duration: DUR.S,
+        delay,
+        ease: "power2.in",
+        overwrite: true,
+      }),
+    );
+  }
+}
 export function animateTextReveal(
   target: AnyTarget,
   mode: Mode,
@@ -542,6 +636,19 @@ function wireDivReveals(scope: ParentNode, local: ScrollTrigger[]): void {
     const dl = stagedDelay(el, 0.1);
     local.push(
       oneShot(wrap, "top bottom", () => animateDivReveal(el, "reveal", dl)),
+    );
+  });
+}
+
+/** Hero-mark goo morph hooks ([data-logo-goo]). Blob initial state,
+ *  wobble-settle reveal on scroll into view — mirrors the div hooks. */
+function wireLogoGoo(scope: ParentNode, local: ScrollTrigger[]): void {
+  qa<HTMLElement>("[data-logo-goo]", scope).forEach((el) => {
+    gsap.set(el, { visibility: "visible" });
+    animateLogoGoo(el, "initial");
+    const dl = stagedDelay(el, 0.45);
+    local.push(
+      oneShot(el, "top bottom", () => animateLogoGoo(el, "reveal", dl)),
     );
   });
 }
@@ -1268,6 +1375,7 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   const knownSplits = new Set(liveSplits);
 
   wireTextReveals(scope, []);
+  wireLogoGoo(scope, []);
   wireClipReveals(scope, []);
   wireDivReveals(scope, []);
   wireWidthReveals(scope, []);

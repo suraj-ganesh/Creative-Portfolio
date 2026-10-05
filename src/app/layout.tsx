@@ -82,6 +82,14 @@ export default function RootLayout({
                 values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11"
               />
             </filter>
+            <filter id="logo-goo" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur id="logo-goo-blur" stdDeviation="14" result="b" />
+              <feColorMatrix
+                in="b"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11"
+              />
+            </filter>
           </defs>
         </svg>
         <ThemeProvider>
