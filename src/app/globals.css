@@ -595,8 +595,8 @@ html {
   position: fixed;
   top: calc(var(--_special-units---global--padding) + 3.4rem);
   right: var(--_special-units---global--padding);
-  width: 3.4rem;
-  height: 4rem;
+  width: max(3.4rem, 40px);
+  height: max(4rem, 47px);
   background: transparent;
   border: 0;
   padding: 0;
@@ -755,6 +755,37 @@ button.cg-pill {
 .cg-phone-btn.is-ghost {
   background: transparent;
   color: var(--_colors---content--primary);
+}
+
+/** -------------------------------------------------
+ * DYNAMIC VIEWPORTS — fluid type floors + mobile fixes
+ * ------------------------------------------------- */
+/* The base scale is linear-vw, so small screens get a lifted type
+ * scale (leading/tracking are %-based and follow automatically). */
+@media (max-width: 991px) {
+  :root {
+    --_fonts---p1--size: 2vw;
+    --_fonts---h1--size: 9vw;
+    --_fonts---h2--size: 5vw;
+  }
+  /* Sphere globe never initializes on touch layouts — keep the
+   * toggle out and the cards view forced. */
+  .works-view {
+    display: none;
+  }
+  [data-filter-content="globe"] {
+    display: none !important;
+  }
+}
+@media (max-width: 479px) {
+  :root {
+    --_fonts---p1--size: 3.6vw;
+    --_fonts---h1--size: 12vw;
+    --_fonts---h2--size: 6.5vw;
+  }
+  .cg-phone-number {
+    font-size: 6vw;
+  }
 }
 main[data-page="contact"] ~ .sticky-name {
   display: none;
