@@ -9,11 +9,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "pub-0b5dfbb7f1bd46be9741d4d704b92507.r2.dev",
+        hostname: "res.cloudinary.com",
       },
     ],
     unoptimized: true,
-  },
-};
+  };
 
 export default nextConfig;

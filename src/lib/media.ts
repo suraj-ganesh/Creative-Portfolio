@@ -1,20 +1,25 @@
 /**
- * Media host base. Local dev / prod-server serves /Videos from public/,
- * so the default (empty base) keeps current behavior byte-for-byte.
+ * Video URL resolution, in priority order:
  *
- * For hosted deploys (Vercel), videos can't live in git or the deploy
- * bundle (size limits) — point NEXT_PUBLIC_MEDIA_BASE at a CDN and every
- * video URL follows automatically, e.g. Cloudinary:
+ * 1. CLOUD_URLS — exact local-path -> Cloudinary delivery URL map
+ *    (cloud public_ids normalize spaces/parens/BOM, so a lookup table
+ *    is the only exact approach). Active immediately, no env needed.
+ * 2. NEXT_PUBLIC_MEDIA_BASE prefix — for future uploads that follow the
+ *    clean pattern, e.g.
+ *      NEXT_PUBLIC_MEDIA_BASE=https://res.cloudinary.com/<cloud>/video/upload/<folder>
+ * 3. Local /Videos path as-is (dev / prod-server).
  *
- *   NEXT_PUBLIC_MEDIA_BASE=https://res.cloudinary.com/<cloud-name>/video/upload/<folder>
- *
- * Filenames (incl. %20-encoding) are preserved, so upload with original
- * names. Posters stay in the repo (tiny) and bypass this helper.
+ * Posters stay in the repo (tiny) and bypass this helper.
  */
+import { CLOUD_URLS } from "@/data/cloudUrls";
+
 const BASE = (process.env.NEXT_PUBLIC_MEDIA_BASE ?? "").replace(/\/$/, "");
 
 export function mediaUrl(path: string | undefined): string | undefined {
-  if (!path || !BASE) return path;
+  if (!path) return path;
+  const mapped = CLOUD_URLS[path];
+  if (mapped) return mapped;
+  if (!BASE) return path;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
   return `${BASE}${path.startsWith("/") ? path : `/${path}`}`;
 }

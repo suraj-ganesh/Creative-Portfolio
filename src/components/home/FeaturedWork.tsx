@@ -57,6 +57,7 @@ export default function FeaturedWork() {
                         loop
                         playsInline
                         preload="metadata"
+                        crossOrigin="anonymous"
                       />
                     )}
                     <img

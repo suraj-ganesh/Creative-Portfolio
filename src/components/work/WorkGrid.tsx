@@ -336,6 +336,7 @@ export default function WorkGrid() {
                             loop
                             playsInline
                             preload="metadata"
+                            crossOrigin="anonymous"
                           />
                         )}
                         <img
