@@ -33,8 +33,10 @@ import { notifyLoaderDone } from "@/lib/loaderGate";
  */
 
 const MIN_DISPLAY_MS = 1400;
-const MAX_WAIT_MS = 10000;
-const VIDEO_GRACE_MS = 3000;
+const MAX_WAIT_MS = 8000;
+const VIDEO_GRACE_MS = 2500;
+// Absolute ceiling: whatever happens, the cover must be gone by now.
+const FORCE_RELEASE_MS = 20000;
 const OBSERVE_WINDOW_MS = 4000;
 
 export default function InitialLoader() {
@@ -57,8 +59,38 @@ export default function InitialLoader() {
 
     const detachFns = new Map<HTMLVideoElement, () => void>();
 
+    /** A video inside `display:none` (e.g. the desktop-only orbit stage
+     *  on phones) or with `preload="none"` never buffers frames — waiting
+     *  on it would stall loading forever on those devices. */
+    function isTrackable(video: HTMLVideoElement): boolean {
+      try {
+        if (video.preload === "none") return false;
+        const rect = video.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return false;
+        const style = window.getComputedStyle(video);
+        if (style.display === "none" || style.visibility === "hidden")
+          return false;
+        let ancestor = video.parentElement;
+        while (ancestor && ancestor !== document.body) {
+          const s = window.getComputedStyle(ancestor);
+          if (s.display === "none") return false;
+          ancestor = ancestor.parentElement;
+        }
+        return true;
+      } catch {
+        return true;
+      }
+    }
+
     function attach(video: HTMLVideoElement): void {
       if (videos.has(video)) return;
+      // Unrendered videos count as done immediately — there is nothing
+      // the user could be waiting to watch.
+      if (!isTrackable(video)) {
+        videos.add(video);
+        readyVideos.add(video);
+        return;
+      }
       videos.add(video);
       if (video.readyState >= 2 || video.error) {
         readyVideos.add(video);
@@ -143,9 +175,14 @@ export default function InitialLoader() {
     let displayed = 1;
     let lastInt = 1;
     let finishTimer = 0;
+    let forceTimer = 0;
 
     const release = () => {
       document.body.classList.remove("is-initial-loading");
+      if (forceTimer) {
+        window.clearTimeout(forceTimer);
+        forceTimer = 0;
+      }
       setGone(true);
     };
 
@@ -228,10 +265,27 @@ export default function InitialLoader() {
     };
     raf = requestAnimationFrame(tick);
 
+    // Last resort: whatever happens upstream (stalled media, throttled
+    // timers, backgrounded tab), the loading cover must be gone by this
+    // ceiling — release the gate, unlock scroll and unmount.
+    let forceReleased = false;
+    forceTimer = window.setTimeout(() => {
+      if (disposed || forceReleased) return;
+      forceReleased = true;
+      try {
+        notifyLoaderDone();
+      } catch {
+        /* ignore */
+      }
+      document.body.classList.remove("is-initial-loading");
+      setGone(true);
+    }, FORCE_RELEASE_MS);
+
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
       window.clearTimeout(finishTimer);
+      window.clearTimeout(forceTimer);
       observer.disconnect();
       detachFns.forEach((detach) => detach());
       window.removeEventListener("load", onLoad);
