@@ -16,6 +16,7 @@ import { initTiltCursor } from "@/lib/fx/tilt";
 import { initCustomScrollbar } from "@/lib/fx/scrollbar";
 import { initReveals, killReveals } from "@/lib/fx/reveal";
 import { runPreloader } from "@/lib/fx/preloader";
+import { playHeroIntro, killHeroIntro, revealHeroInstant } from "@/lib/fx/heroIntro";
 import { initNav, closeMenu, updateNavIndicators } from "@/lib/fx/nav";
 import { initStickyName } from "@/lib/fx/sticky-name";
 import { initGlobe, destroyGlobe } from "@/lib/fx/globe";
@@ -28,6 +29,27 @@ import { initThemeDots } from "@/lib/fx/theme-liquid";
 
 function pageRoot(): HTMLElement | null {
   return document.querySelector("main");
+}
+
+function isHomePage(): boolean {
+  return document.querySelector('main[data-page="home"]') !== null;
+}
+
+/** Play the serial hero entrance (logo -> line -> name -> texts -> menu
+ *  -> lever). Falls back to an instant reveal so staged content can
+ *  never strand hidden. */
+function playIntroSafe(): void {
+  if (!isHomePage()) return;
+  try {
+    playHeroIntro();
+  } catch (err) {
+    console.error("[fx] hero intro failed:", err);
+    try {
+      revealHeroInstant();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 /** Run an fx init safely: a throwing module logs and yields a no-op cleanup
@@ -81,6 +103,11 @@ export default function SiteFx() {
   pathRef.current = pathname;
 
   const teardownPage = useCallback(() => {
+    try {
+      killHeroIntro();
+    } catch {
+      /* ignore */
+    }
     for (const fn of pageCleanups.current) {
       try {
         fn();
@@ -186,6 +213,7 @@ export default function SiteFx() {
       fxLog(`preloader resolved in ${Math.round(performance.now() - t0)}ms`);
       readyRef.current = true;
       initPage();
+      playIntroSafe();
       fxLog(
         `initPage done, ScrollTriggers: ${ScrollTrigger.getAll().length}, modules: ${fxStatus().modules.join(",")}`,
       );
@@ -231,6 +259,9 @@ export default function SiteFx() {
     } catch {
       /* ignore */
     }
+    // Replaying the serial hero entrance on later home visits keeps the
+    // flow identical to the initial load.
+    playIntroSafe();
     if (wasTransition) enter();
     else lenisStart();
   }, [pathname, teardownPage, initPage, enter]);

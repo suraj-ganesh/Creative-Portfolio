@@ -7,7 +7,8 @@ import { prefersReduced } from "@/lib/fx/core";
 
 /** Minecraft wall-lever switch: fixed below the menu, always visible.
  *  Faux-3D cobblestone mount (top/front/side faces) with an extruded
- *  wooden stick. Stick up-left = light (base), mirrored up-right = dark. */
+ *  wooden stick. Stick up-left = light (base), mirrored up-right = dark.
+ *  A status lamp on the mount glows red while dark mode is on. */
 export default function ThemeLever() {
   const { mode, setMode } = useTheme();
   const isDark = mode === "4";
@@ -57,7 +58,8 @@ export default function ThemeLever() {
       aria-label="Toggle dark theme"
       data-haptic="medium"
       data-reveal="div"
-      data-reveal-delay="2.2"
+      data-intro-step="7"
+      data-reveal-delay="2.3"
       onClick={toggle}
       className="mc-lever"
       data-dark={isDark ? "on" : "off"}
@@ -130,6 +132,30 @@ export default function ThemeLever() {
         {/* Dark socket the stick sits in (upper-left of the mount) */}
         <rect x="16" y="28" width="9" height="8" fill="#1c1c1c" />
         <rect x="17" y="29" width="7" height="6" fill="#2e2e2e" />
+        {/* Status lamp (lower-right of the mount): dim socket in light
+            mode, glowing red while dark mode is on. */}
+        <rect x="25" y="42" width="6" height="6" fill="#141414" />
+        <rect x="25" y="42" width="6" height="1" fill="#2e2e2e" />
+        <circle
+          cx="28"
+          cy="45"
+          r="4.8"
+          fill="#ff2a1a"
+          opacity={isDark ? 0.4 : 0}
+          style={{ transition: "opacity 0.35s ease" }}
+        />
+        <circle
+          cx="28"
+          cy="45"
+          r="2.2"
+          fill={isDark ? "#ff4030" : "#47211b"}
+          style={{
+            transition: "fill 0.35s ease, filter 0.35s ease",
+            filter: isDark
+              ? "drop-shadow(0 0 2.5px rgba(255,64,48,0.95))"
+              : "none",
+          }}
+        />
         {/* Extruded wooden stick, pivot at (20,32).
             Light/off rests up-left like the sprite; dark mirrors it. */}
         <g

@@ -120,15 +120,16 @@ function logoGooBlurNode(): SVGElement | null {
 }
 /** Hero-mark goo morph: the logo starts as a wobbling ink blob (melted
  *  by its own goo filter + squashed/rotated) and settles into the crisp
- *  mark — the same blob-to-form language as the text morph. */
+ *  mark — the same blob-to-form language as the text morph. Returns the
+ *  wobble timeline so a master timeline can nest and await it. */
 export function animateLogoGoo(
   target: AnyTarget,
   mode: Mode,
   delay = 0.45,
   scope: ParentNode = document,
-): void {
+): gsap.core.Timeline | null {
   const els = toEls(target, scope);
-  if (!els.length) return;
+  if (!els.length) return null;
   const bn = logoGooBlurNode();
   if (mode === "initial") {
     if (bn) gsap.set(bn, { attr: { stdDeviation: 14 } });
@@ -143,7 +144,9 @@ export function animateLogoGoo(
         transformOrigin: "50% 50%",
       });
     });
+    return null;
   } else if (mode === "reveal") {
+    let first: gsap.core.Timeline | null = null;
     els.forEach((el) => {
       gsap.set(el, { autoAlpha: 1, visibility: "visible" });
       const tl = gsap.timeline({
@@ -175,6 +178,7 @@ export function animateLogoGoo(
           ease: "elastic.out(1, 0.42)",
         });
       trackTw(tl);
+      first ??= tl;
     });
     if (bn) {
       trackTw(
@@ -194,6 +198,7 @@ export function animateLogoGoo(
     } else {
       els.forEach((el) => gsap.set(el, { clearProps: "filter,transform" }));
     }
+    return first;
   } else {
     els.forEach((el) => gsap.set(el, { clearProps: "filter,transform" }));
     trackTw(
@@ -205,6 +210,7 @@ export function animateLogoGoo(
         overwrite: true,
       }),
     );
+    return null;
   }
 }
 export function animateTextReveal(
@@ -455,7 +461,7 @@ export function animateLink(
   });
 }
 
-const CLIP_DIRS: Record<string, { hidden: string; visible: string }> = {
+export const CLIP_DIRS: Record<string, { hidden: string; visible: string }> = {
   "top-down": { hidden: "inset(0% 0% 100% 0%)", visible: "inset(0% 0% 0% 0%)" },
   "left-right": {
     hidden: "inset(0% 100% 0% 0%)",
@@ -569,6 +575,17 @@ export function revealNow(scope: ParentNode = document): void {
 /* join a choreographed entrance cascade instead of firing with the pack. */
 /* ------------------------------------------------------------------ */
 
+/** True when the home hero owns its entrance: elements tagged
+ *  [data-intro-step] are staged hidden here and driven serially by the
+ *  hero-intro master timeline (lib/fx/heroIntro.ts) instead of firing
+ *  their own ScrollTrigger one-shots. Every home visit replays the
+ *  cascade, so there is no stuck-hidden state to manage. */
+function stagesHeroIntro(scope: ParentNode): boolean {
+  const root = scope instanceof Element ? scope : document;
+  if (!root.querySelector("[data-intro-step]")) return false;
+  return document.querySelector('main[data-page="home"]') !== null;
+}
+
 function stagedDelay(el: HTMLElement, fallback: number): number {
   const raw = el.getAttribute("data-reveal-delay");
   if (raw === null) return fallback;
@@ -597,6 +614,12 @@ function oneShot(
 
 function wireTextReveals(scope: ParentNode, local: ScrollTrigger[]): void {
   qa<HTMLElement>('[data-reveal="text"]', scope).forEach((el) => {
+    // Hero-intro members stay staged (hidden, unsplit) for the master
+    // timeline; it splits and animates them serially itself.
+    if (el.hasAttribute("data-intro-step") && stagesHeroIntro(scope)) {
+      gsap.set(el, { visibility: "visible", autoAlpha: 0 });
+      return;
+    }
     gsap.set(el, { visibility: "visible" });
     animateTextReveal(el, "initial");
     // Legacy exact: start "top bottom", once, delay 0.1
@@ -618,6 +641,13 @@ const CLIP_ATTR: Record<string, string> = {
 function wireClipReveals(scope: ParentNode, local: ScrollTrigger[]): void {
   Object.entries(CLIP_ATTR).forEach(([attr, dir]) => {
     qa<HTMLElement>(`[data-reveal="${attr}"]`, scope).forEach((el) => {
+      // Hero-intro members (the vertical divider lines) stay staged for
+      // the master timeline's top-to-bottom draw.
+      if (el.hasAttribute("data-intro-step") && stagesHeroIntro(scope)) {
+        gsap.set(el, { visibility: "visible" });
+        animateClipReveal(el, dir, "initial");
+        return;
+      }
       gsap.set(el, { visibility: "visible" });
       animateClipReveal(el, dir, "initial");
       const dl = stagedDelay(el, 0.1);
@@ -631,6 +661,13 @@ function wireClipReveals(scope: ParentNode, local: ScrollTrigger[]): void {
 function wireDivReveals(scope: ParentNode, local: ScrollTrigger[]): void {
   qa<HTMLElement>('[data-reveal="div"]', scope).forEach((el) => {
     const wrap = el.closest('[data-reveal="w"]') ?? el;
+    // The theme lever joins the hero cascade last; stage it without an
+    // auto trigger on home.
+    if (el.hasAttribute("data-intro-step") && stagesHeroIntro(scope)) {
+      gsap.set(el, { visibility: "visible" });
+      animateDivReveal(el, "initial");
+      return;
+    }
     gsap.set(el, { visibility: "visible" });
     animateDivReveal(el, "initial");
     const dl = stagedDelay(el, 0.1);
@@ -646,6 +683,9 @@ function wireLogoGoo(scope: ParentNode, local: ScrollTrigger[]): void {
   qa<HTMLElement>("[data-logo-goo]", scope).forEach((el) => {
     gsap.set(el, { visibility: "visible" });
     animateLogoGoo(el, "initial");
+    // Hero mark morphs first in the master timeline — stage the blob
+    // without an auto trigger on home.
+    if (el.hasAttribute("data-intro-step") && stagesHeroIntro(scope)) return;
     const dl = stagedDelay(el, 0.45);
     local.push(
       oneShot(el, "top bottom", () => animateLogoGoo(el, "reveal", dl)),
@@ -721,6 +761,37 @@ function wireLinks(scope: ParentNode): void {
   });
 }
 
+const MORPH_RECT = "M0 0 L95 0 L95 160 L0 160 Z";
+
+/** Logo path morph (rect -> final mark) with a clip opening. Returned
+ *  timeline lets the hero-intro master nest and await the full morph. */
+export function playLogoMorph(
+  wrap: HTMLElement,
+  path: HTMLElement,
+  final: string,
+  clipDur: number = DUR.M,
+  morphDur: number = DUR.L,
+): gsap.core.Timeline {
+  gsap.killTweensOf([path, wrap]);
+  gsap.set(path, { attr: { d: MORPH_RECT } });
+  const tl = gsap.timeline();
+  tl.set(wrap, { visibility: "visible", clipPath: "inset(0% 0% 100% 0%)" });
+  tl.to(wrap, {
+    clipPath: "inset(0% 0% 0% 0%)",
+    duration: clipDur,
+    ease: "power2.out",
+  });
+  tl.to(
+    path,
+    {
+      morphSVG: final,
+      duration: morphDur,
+      ease: "power2.out",
+    } as gsap.TweenVars,
+  );
+  return trackTw(tl);
+}
+
 function wireLogoMorph(scope: ParentNode): void {
   const path = scope.querySelector<HTMLElement>("[data-morph-final]");
   if (!path) return;
@@ -733,25 +804,9 @@ function wireLogoMorph(scope: ParentNode): void {
   if (final && !path.dataset.morphFinal) path.dataset.morphFinal = final;
   const wrap = scope.querySelector<HTMLElement>(".icon-wrap");
   if (!wrap || !final) return;
-  gsap.killTweensOf([path, wrap]);
-  gsap.set(path, { attr: { d: "M0 0 L95 0 L95 160 L0 160 Z" } });
-  gsap.set(wrap, { visibility: "visible", clipPath: "inset(0% 0% 100% 0%)" });
-  trackTw(
-    gsap.to(wrap, {
-      clipPath: "inset(0% 0% 0% 0%)",
-      duration: DUR.M,
-      ease: "power2.out",
-      onComplete: () => {
-        trackTw(
-          gsap.to(path, {
-            morphSVG: final,
-            duration: DUR.L,
-            ease: "power2.out",
-          } as gsap.TweenVars),
-        );
-      },
-    }),
-  );
+  // Hero mark is morphed by the master timeline on home — never here.
+  if (wrap.hasAttribute("data-intro-step") && stagesHeroIntro(scope)) return;
+  playLogoMorph(wrap, path, final);
 }
 
 function wireAwards(scope: ParentNode): void {

@@ -341,9 +341,9 @@ html {
   --_colors---content--tertiary: var(--_global-colors---white--30);
   --_colors--nav---indicator--fill: var(--_global-colors---white--100);
   --_colors--nav---indicator--content-active: var(--_global-colors---black--100);
-  --_colors--nav---background--bg-1: var(--_global-colors---white--10);
-  --_colors--nav---background--bg-2: var(--_global-colors---white--10);
-  --_colors--nav---background--bg-3: var(--_global-colors---white--5);
+  --_colors--nav---background--bg-1: #1a1a1a;
+  --_colors--nav---background--bg-2: #222222;
+  --_colors--nav---background--bg-3: #2b2b2b;
   --_colors--nav---indicator--border: var(--_colors---border--100);
   --_colors--nav---indicator--content: var(--_global-colors---white--100);
 }
@@ -789,6 +789,465 @@ button.cg-pill {
 }
 main[data-page="contact"] ~ .sticky-name {
   display: none;
+}
+
+/** -------------------------------------------------
+ * INITIAL LOADER — fullscreen cover + bottom-left 1-100%
+ * ------------------------------------------------- */
+/* Fullscreen loading cover shown only on the initial page load while
+ * videos buffer (mirrors the bleibtgleich.dev reference). Lives in the
+ * root layout so SPA navigations never re-trigger it. Nothing underneath
+ * is visible until the counter reaches 100%. */
+.initial-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  pointer-events: none;
+}
+
+.initial-loader__cover {
+  position: absolute;
+  inset: 0;
+  background: var(--_colors---background--bg, #000);
+  pointer-events: auto;
+}
+
+.initial-loader__value {
+  position: absolute;
+  left: var(--_special-units---global--padding, 1rem);
+  bottom: var(--_units---u-16, 1rem);
+  font-family: var(--_fonts---font-display, "Akzidenz Grotesk Pro", Arial, sans-serif);
+  font-size: var(--_fonts---h1--size, 3rem);
+  line-height: var(--_fonts---h1--line-height, 90%);
+  letter-spacing: var(--_fonts---h1--letter-spacing, -0.02em);
+  font-weight: 500;
+  color: var(--_colors---content--primary, #fff);
+  font-variant-numeric: tabular-nums;
+}
+
+.initial-loader,
+.initial-loader__cover,
+.initial-loader__value {
+  opacity: 1;
+  /* Buttery ease-out fade that matches the site's motion language. */
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity;
+}
+
+.initial-loader.is-leaving,
+.initial-loader.is-leaving .initial-loader__cover,
+.initial-loader.is-leaving .initial-loader__value {
+  opacity: 0;
+}
+
+/* Lock scroll while the cover is up. */
+body.is-initial-loading {
+  overflow: hidden;
+}
+
+/* While the video-aware loader is up, hide the legacy preloader count so
+ * there is only ever one percentage on screen. The !important wins over
+ * the inline opacity GSAP writes during the legacy count-up. */
+body.is-initial-loading .count {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/** -------------------------------------------------
+ * CV BUTTON + MODAL + DOCUMENT
+ * ------------------------------------------------- */
+/* Fixed pill right below the theme lever. Theme-aware so it reads on
+ * every background. */
+.cv-button {
+  position: fixed;
+  top: calc(
+    var(--_special-units---global--padding, 1rem) + 3.4rem +
+      max(4rem, 47px) + 0.75rem
+  );
+  right: var(--_special-units---global--padding, 1rem);
+  z-index: 93;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cv-button__icon {
+  width: 46px;
+  height: 46px;
+  display: block;
+  transition: transform 0.3s var(--ease-out, ease-out);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+@media (min-width: 992px) {
+  .cv-button:hover .cv-button__icon {
+    transform: scale(1.12) rotate(-4deg);
+  }
+}
+
+@media (hover: none) {
+  .cv-button:active .cv-button__icon {
+    transform: scale(0.9);
+  }
+}
+
+/* CV popup overlay */
+.cv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(10px, 3vmin, 28px) clamp(10px, 4vmin, 32px);
+  animation: cv-modal-in 0.35s var(--ease-out, ease-out);
+}
+
+@keyframes cv-modal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cv-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.cv-modal__scroll {
+  position: relative;
+  /* margin:auto centers when short AND keeps the top reachable when the
+   * sheet exceeds the viewport (plain flex centering can clip the top). */
+  margin: auto;
+  width: min(880px, 100%);
+  max-height: min(92vh, 1000px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  animation: cv-sheet-in 0.45s var(--ease-out, ease-out);
+}
+
+@keyframes cv-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Toolbar above the CV: title left, Download top-right. */
+.cv-modal__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.2rem 0.9rem;
+}
+
+.cv-modal__title {
+  color: #fff;
+  font-size: 15px;
+}
+
+.cv-modal__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cv-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0.7em 1.5em;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cv-modal__btn:active {
+  transform: scale(0.96);
+}
+
+.cv-modal__btn.is-ghost {
+  background: transparent;
+  color: #fff;
+}
+
+/* The document sheet. Type is px-based on purpose: the site root runs
+ * font-size:1vw, which would shrink rem-sized document text to a few
+ * pixels on phones. px keeps the CV identically readable everywhere. */
+.cv-modal__sheet {
+  background: #ffffff;
+  color: #161616;
+  border-radius: 10px;
+  overflow: clip;
+  box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.5);
+}
+
+.cv-doc {
+  padding: clamp(20px, 4vw, 48px);
+  font-family: "Akzidenz Grotesk Pro", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #161616;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    #ffffff;
+  background-size: 72px 72px;
+}
+
+.cv-doc__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.cv-doc__name {
+  font-family: var(--_fonts---font-display, "Akzidenz Grotesk Pro", Arial, sans-serif);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: clamp(30px, 5vw + 12px, 48px);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.cv-doc__role {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 17px;
+  margin-top: 8px;
+}
+
+.cv-doc__contact {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 15px;
+  min-width: 0;
+}
+
+.cv-doc__contact li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-doc__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #161616;
+  color: #fff;
+  font-size: 13px;
+}
+
+.cv-doc__rule {
+  height: 5px;
+  margin: 22px 0;
+  background: linear-gradient(90deg, #161616 0 32%, rgba(0, 0, 0, 0.25) 32% 100%);
+}
+
+.cv-doc__section {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.cv-doc__cols {
+  display: grid;
+  grid-template-columns: 1fr 1.9fr;
+  gap: 36px;
+}
+
+.cv-doc__cols section {
+  margin-bottom: 21px;
+}
+
+.cv-doc__body {
+  margin: 0 0 7px;
+}
+
+.cv-doc__list {
+  list-style: disc;
+  padding-left: 19px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cv-doc__job {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 16px;
+}
+
+.cv-doc__job::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #161616;
+}
+
+.cv-doc__job::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 21px;
+  bottom: -6px;
+  width: 1px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.cv-doc__job:last-child::after {
+  display: none;
+}
+
+.cv-doc__job-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.cv-doc__job-org {
+  text-transform: uppercase;
+  font-size: 13px;
+  opacity: 0.75;
+  margin: 0 0 6px;
+}
+
+.cv-doc__bullets {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cv-doc__edu {
+  margin-bottom: 16px;
+}
+
+.cv-doc__edu-degree {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .cv-doc {
+    font-size: 14px;
+    padding: 20px 18px;
+  }
+  .cv-doc__cols {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .cv-doc__contact {
+    font-size: 13.5px;
+  }
+  .cv-doc__contact li {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .cv-modal {
+    padding: 8px;
+  }
+  .cv-modal__toolbar {
+    padding: 8px 2px 10px;
+  }
+  .cv-modal__btn {
+    min-height: 42px;
+    padding: 0.6em 1.1em;
+    font-size: 13px;
+  }
+}
+
+/** -------------------------------------------------
+ * DEVICE HARDENING — overflow, touch targets, tap behavior
+ * ------------------------------------------------- */
+/* Never allow sideways page scroll (fixed/sticky chrome on narrow
+ * viewports must not widen the page). */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Remove tap delay / double-tap zoom on the fixed chrome controls and
+ * give touch users pressed feedback (hover doesn't exist on touch). */
+.mc-lever,
+.nav-button,
+.cv-button,
+.cv-modal__btn,
+.button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) {
+  .mc-lever:active {
+    transform: scale(0.92);
+  }
+  .nav-button:active {
+    transform: scale(0.95);
+  }
+  .link-button:active {
+    background: var(--_colors---fill--primary);
+    color: var(--_colors---background--bg);
+  }
+  .social-item:active {
+    transform: scale(0.9);
+  }
+  .social-item:active .social-item-inner {
+    color: var(--_colors---background--bg);
+  }
 }
 
 /** -------------------------------------------------

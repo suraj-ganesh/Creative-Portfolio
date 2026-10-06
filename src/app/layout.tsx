@@ -5,6 +5,8 @@ import ThemeLever from "@/components/ThemeLever";
 import GridWrap from "@/components/GridWrap";
 import StickyName from "@/components/StickyName";
 import CustomScrollbar from "@/components/CustomScrollbar";
+import InitialLoader from "@/components/InitialLoader";
+import CvButton from "@/components/CvButton";
 import { ThemeProvider } from "@/lib/theme";
 import SiteFx from "@/components/SiteFx";
 
@@ -68,6 +70,10 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Without JS the loading cover can never lift — never show it. */}
+        <noscript>
+          <style>{`.initial-loader{display:none !important}`}</style>
+        </noscript>
       </head>
       <body className="body">
         {/* Shared goo filter for the blob-to-text heading morph.
@@ -97,9 +103,11 @@ export default function RootLayout({
           <GridWrap />
           <Nav />
           <ThemeLever />
+          <CvButton />
           {children}
           <StickyName />
           <CustomScrollbar />
+          <InitialLoader />
         </div>
         </ThemeProvider>
 
