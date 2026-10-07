@@ -1300,10 +1300,13 @@ body {
 .works-list .works-item-image-inner img,
 .works-list .works-item-image-inner video {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   object-fit: cover;
   display: block;
 }
+/* The frame keeps the native ratio via aspect-ratio above; the image's own
+ * intrinsic ratio matches it, so tiles can never collapse to zero height
+ * even where aspect-ratio is unsupported. */
 /* Title stays bottom-left inside the same frame. */
 .works-list .works-item-meta {
   position: absolute;
@@ -1374,6 +1377,39 @@ body {
   .hero-lite .intro-inner,
   .hero-lite__tile {
     animation: none;
+  }
+}
+
+/** -------------------------------------------------
+ * FOOTER MOBILE — single column, wrapped text, no bleed
+ * ------------------------------------------------- */
+@media (max-width: 991px) {
+  /* The 8-col Webflow grid + giant display type overflows narrow
+   * viewports — stack everything in one column instead. */
+  .grid.is-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .grid.is-footer > * {
+    min-width: 0;
+  }
+  .footer .heading-group-wrap.is-right {
+    align-items: flex-start;
+    text-align: left;
+  }
+  /* Long email / phone strings must wrap instead of pushing wide. */
+  .footer .link-button {
+    max-width: 100%;
+  }
+  .footer .link-button .p1,
+  .footer-mail-inner .p1 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  /* Safety net: split-line mask padding can bleed past glyph boxes. */
+  .footer {
+    overflow: clip;
   }
 }
 

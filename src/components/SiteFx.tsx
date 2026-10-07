@@ -14,7 +14,7 @@ import { initHaptics } from "@/lib/fx/haptics";
 import { initLinks } from "@/lib/fx/links";
 import { initTiltCursor } from "@/lib/fx/tilt";
 import { initCustomScrollbar } from "@/lib/fx/scrollbar";
-import { initReveals, killReveals } from "@/lib/fx/reveal";
+import { initReveals, killReveals, revealNow } from "@/lib/fx/reveal";
 import { runPreloader } from "@/lib/fx/preloader";
 import { playHeroIntro, killHeroIntro, revealHeroInstant } from "@/lib/fx/heroIntro";
 import { initNav, closeMenu, updateNavIndicators } from "@/lib/fx/nav";
@@ -213,6 +213,28 @@ export default function SiteFx() {
 
   const initPage = useCallback(() => {
     updateNavIndicators();
+    // Static work page on phones: unhide everything instantly with zero
+    // ScrollTriggers or scrub timelines — the bento grid just renders, and
+    // every tile stays reachable no matter what animation does.
+    try {
+      const mobile =
+        window.matchMedia("(max-width: 991px)").matches ||
+        window.matchMedia("(pointer: coarse)").matches;
+      const work =
+        document.querySelector('main[data-page="works"]') !== null;
+      if (mobile && work) {
+        revealNow();
+        try {
+          ScrollTrigger.refresh();
+        } catch {
+          /* ignore */
+        }
+        lenisResize();
+        return;
+      }
+    } catch {
+      /* matchMedia unavailable — fall through to the animated path */
+    }
     pageCleanups.current = [
       safe("reveals", () => initReveals()),
       safe("links", () => initLinks()),
