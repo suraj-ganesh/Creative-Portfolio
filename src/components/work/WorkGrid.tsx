@@ -1,50 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { projects, projectAspect, type Project } from "@/data/projects";
 import VideoLightbox from "@/components/work/VideoLightbox";
-import { mediaUrl, rawMediaUrl, MOBILE_VIDEO_TRANSFORM } from "@/lib/media";
 
 export default function WorkGrid() {
   const [active, setActive] = useState<Project | null>(null);
   const closeLightbox = useCallback(() => setActive(null), []);
-  // Globe database videos only exist on desktop (the sphere never runs
-  // on phones).
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const desk = window.matchMedia("(min-width: 992px)");
-    const update = () => setIsDesktop(desk.matches);
-    update();
-    desk.addEventListener("change", update);
-    return () => desk.removeEventListener("change", update);
-  }, []);
-
-  // Pause sphere videos hidden by the Cards/Sphere filter so background
-  // tabs never decode video needlessly.
-  useEffect(() => {
-    const containers = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-filter-content]"),
-    );
-    if (!containers.length) return;
-    const pauseHidden = () => {
-      containers.forEach((c) => {
-        if (c.style.display === "none") {
-          c.querySelectorAll<HTMLVideoElement>("video").forEach((v) => {
-            try {
-              v.pause();
-            } catch {
-              /* noop */
-            }
-          });
-        }
-      });
-    };
-    const observer = new MutationObserver(pauseHidden);
-    containers.forEach((c) =>
-      observer.observe(c, { attributes: true, attributeFilter: ["style"] }),
-    );
-    return () => observer.disconnect();
-  }, []);
 
   const openPlayer = (e: React.MouseEvent, project: Project) => {
     e.preventDefault();
@@ -87,51 +49,6 @@ export default function WorkGrid() {
             >
               Work
             </h1>
-            <div
-              data-reveal="w"
-              id="w-node-_018fa649-3599-6827-e480-d4f6b10cfd8d-3f92bac2"
-              className="works-view"
-            >
-              <a
-                data-filter-tab="cards"
-                href="#work"
-                className="filter-tab w-inline-block"
-              >
-                <div data-reveal="div" className="link-inner">
-                  <div data-link="label" className="p1">
-                    Cards
-                  </div>
-                  <div
-                    data-link="shadow"
-                    data-filter-tab="cards"
-                    className="p1 is-2"
-                  >
-                    Cards
-                  </div>
-                </div>
-              </a>
-              <div data-reveal="div" className="p1 is-secondary">
-                /
-              </div>
-              <a
-                data-filter-tab="globe"
-                href="#work"
-                className="filter-tab w-inline-block"
-              >
-                <div data-reveal="div" className="link-inner">
-                  <div data-link="label" className="p1">
-                    Sphere
-                  </div>
-                  <div
-                    data-link="shadow"
-                    data-filter-tab="globe"
-                    className="p1 is-2"
-                  >
-                    Sphere
-                  </div>
-                </div>
-              </a>
-            </div>
           </div>
         </div>
 
@@ -208,135 +125,6 @@ export default function WorkGrid() {
                 </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div data-filter-content="globe" className="works-globe-wrap">
-            <div className="works-globe-inner">
-              <div className="works-globe-info">
-                <div className="works-globe-info-inner">
-                  <div className="works-globe-info-list-wrap w-dyn-list">
-                    <div
-                      role="list"
-                      className="works-globe-info-list w-dyn-items"
-                    >
-                      {projects.map((project) => (
-                        <div
-                          key={project.slug}
-                          data-works-info={project.slug}
-                          role="listitem"
-                          className="works-globe-info-ltem w-dyn-item"
-                        >
-                          <div className="w-layout-grid grid">
-                            <div
-                              id="w-node-_72e5e985-1a86-dcb2-f1cc-0b1790b33bf1-3f92bac2"
-                              className="p1"
-                            >
-                              {project.title}
-                            </div>
-                            <div
-                              data-works=""
-                              id="w-node-_1efd63bf-0ff7-8abe-8ecd-b416fa7ca86c-3f92bac2"
-                              className="work-services"
-                            >
-                              <div className="work-services-list-wrap w-dyn-list">
-                                <div
-                                  data-cut="list"
-                                  role="list"
-                                  className="works-services-list w-dyn-items"
-                                >
-                                  {(project.services ?? []).map((s) => (
-                                    <div
-                                      key={s}
-                                      data-cut="item"
-                                      role="listitem"
-                                      className="works-services-item w-dyn-item"
-                                    >
-                                      <div className="p1">{s}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div
-                                data-cut="counter"
-                                className="p1 is-cut-counter"
-                              >
-                                +0
-                              </div>
-                            </div>
-                            {project.videoSrc && (
-                              <button
-                                type="button"
-                                onClick={() => setActive(project)}
-                                aria-label={`${project.title} — play video with sound`}
-                                className="button is-on-bg w-inline-block"
-                                style={{ cursor: "pointer", marginTop: 8 }}
-                              >
-                                <div className="link-inner">
-                                  <div data-link="label" className="p1">
-                                    Play with sound
-                                  </div>
-                                  <div data-link="shadow" className="p1 is-2">
-                                    Play with sound
-                                  </div>
-                                </div>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                data-tab-content-reval="globe"
-                data-featured="globe"
-                data-globe="wrap"
-                className="works-globe"
-              >
-                <div className="globe-database-wrap w-dyn-list">
-                  <div
-                    data-globe="database"
-                    role="list"
-                    className="globe-database w-dyn-items"
-                  >
-                    {projects.map((p) => (
-                      <div
-                        key={p.slug}
-                        data-works-database={p.slug}
-                        data-globe="img"
-                        role="listitem"
-                        className="globe-database-item w-dyn-item"
-                      >
-                        {p.videoSrc && isDesktop && (
-                          <video
-                            src={mediaUrl(p.videoSrc, {
-                              transform: MOBILE_VIDEO_TRANSFORM,
-                            })}
-                            data-raw={rawMediaUrl(p.videoSrc)}
-                            poster={p.coverImage}
-                            muted
-                            loop
-                            playsInline
-                            preload="none"
-                            crossOrigin="anonymous"
-                          />
-                        )}
-                        <img
-                          src={p.coverImage}
-                          loading="lazy"
-                          decoding="async"
-                          alt={p.title}
-                          height={1024}
-                          className="img"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

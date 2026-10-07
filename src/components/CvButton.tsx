@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { usePathname } from "next/navigation";
 import CvModal from "@/components/cv/CvModal";
 
 /** Archive-box-with-CV-folders glyph for the fixed CV button, recreating
@@ -63,6 +64,9 @@ function ArchiveBoxIcon() {
 export default function CvButton() {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  // Home page only — work, contact and 404 have no CV entry.
+  const pathname = usePathname();
+  if (pathname !== "/") return null;
 
   return (
     <>

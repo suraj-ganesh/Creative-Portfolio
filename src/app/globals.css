@@ -768,14 +768,6 @@ button.cg-pill {
     --_fonts---h1--size: 9vw;
     --_fonts---h2--size: 5vw;
   }
-  /* Sphere globe never initializes on touch layouts — keep the
-   * toggle out and the cards view forced. */
-  .works-view {
-    display: none;
-  }
-  [data-filter-content="globe"] {
-    display: none !important;
-  }
 }
 @media (max-width: 479px) {
   :root {
@@ -1323,6 +1315,82 @@ body {
 /* Keep the hover Play pill anchored to its tile in the flow. */
 .works-list .works-item-button {
   z-index: 3;
+}
+
+/** -------------------------------------------------
+ * STATIC HERO (phones / low-power — no GSAP/WebGL/video)
+ * ------------------------------------------------- */
+/* Same grid as the animated hero; content is always visible (no fx hooks)
+ * with a transform-only CSS entrance — no blur, filter, or box-shadow. */
+.hero-lite .icon-wrap.is-logo {
+  visibility: visible;
+}
+@keyframes hero-lite-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-lite .intro-inner {
+  animation: hero-lite-in 0.7s var(--ease-out) both;
+}
+.hero-lite__collage {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px var(--_special-units---global--padding);
+}
+@media (min-width: 768px) {
+  .hero-lite__collage {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.hero-lite__tile {
+  overflow: clip;
+  border-radius: 12px;
+  background: #000;
+  animation: hero-lite-in 0.7s var(--ease-out) both;
+}
+.hero-lite__tile:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.hero-lite__tile:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.hero-lite__tile:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.hero-lite__tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-lite .intro-inner,
+  .hero-lite__tile {
+    animation: none;
+  }
+}
+
+/** -------------------------------------------------
+ * 404 PAGE — main logo + lowered lever
+ * ------------------------------------------------- */
+/* White mark only on the dark theme; dark mark everywhere else. */
+.theme-mode-4 ._404-icon img._404-logo.is-dark {
+  display: none !important;
+}
+.theme-mode-4 ._404-icon img._404-logo.is-white {
+  display: block !important;
+}
+/* Drop the theme lever further below the nav so it clears the 404
+ * heading instead of sitting against it. */
+body:has(main[data-page="error-404"]) .mc-lever {
+  top: calc(var(--_special-units---global--padding) + 9rem);
 }
 
 /** -------------------------------------------------

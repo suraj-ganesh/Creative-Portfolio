@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { profile } from "@/data/profile";
-import Hero from "@/components/home/Hero";
+import HomeHero from "@/components/home/HomeHero";
 import FeaturedWork from "@/components/home/FeaturedWork";
 import AwardsSection from "@/components/home/AwardsSection";
 import Footer from "@/components/Footer";
@@ -17,7 +17,7 @@ export default function Home() {
       data-page="home"
       className="transition-container"
     >
-      <Hero />
+      <HomeHero />
       <FeaturedWork />
       <AwardsSection />
       <Footer />

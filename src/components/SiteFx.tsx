@@ -38,6 +38,20 @@ function isDesktopFx(): boolean {
   }
 }
 
+/** True when the page actually hosts a desktop-only FX hook. Pages without
+ *  one (work, contact, 404) skip the heavy chunks entirely. */
+function needsDesktopFx(): boolean {
+  try {
+    return (
+      document.querySelector(
+        '[data-globe="wrap"],[data-fluid-reveal],[data-infinite-canvas]',
+      ) !== null
+    );
+  } catch {
+    return true;
+  }
+}
+
 async function loadDesktopFx(
   names: Array<"globe" | "fluid" | "canvas">,
 ): Promise<Array<() => void>> {
@@ -67,10 +81,16 @@ async function loadDesktopFx(
   } catch (err) {
     console.error("[fx] canvas failed:", err);
   }
+  if (cleanups.length) desktopFxLoaded = true;
   return cleanups;
 }
 
+let desktopFxLoaded = false;
+
 async function destroyDesktopFx(): Promise<void> {
+  // Never import the heavy chunks just to tear them down — pages that
+  // never loaded them (mobile, hook-less pages) have nothing to destroy.
+  if (!desktopFxLoaded) return;
   try {
     const [g, f, c] = await Promise.all([
       import("@/lib/fx/globe"),
@@ -204,8 +224,9 @@ export default function SiteFx() {
       safe("themedots", () => initThemeDots()),
     ];
     // Heavy desktop-only engines load in a separate chunk, after the
-    // lightweight FX above — phones skip this entirely (zero three.js).
-    if (isDesktopFx()) {
+    // lightweight FX above — phones skip this entirely (zero three.js),
+    // as do pages with no desktop-FX hooks (work, contact, 404).
+    if (isDesktopFx() && needsDesktopFx()) {
       void loadDesktopFx(["globe", "fluid", "canvas"]).then((extra) => {
         for (const fn of extra) pageCleanups.current.push(fn);
         try {
@@ -301,8 +322,28 @@ export default function SiteFx() {
       console.error("[fx] preloader failed:", err);
       finishBoot();
     });
+    // The home hero mounts static first and swaps in the full animated
+    // hero once its chunk loads — rewire page FX onto the swapped DOM.
+    // If boot hasn't finished, the swap is irrelevant (boot inits later).
+    const onHeroSwapped = () => {
+      if (!readyRef.current) return;
+      try {
+        teardownPage();
+      } catch {
+        /* ignore */
+      }
+      scrollTopImmediate();
+      try {
+        initPage();
+      } catch {
+        /* ignore */
+      }
+      playIntroSafe();
+    };
+    window.addEventListener("hero:swapped", onHeroSwapped);
     return () => {
       cancelled = true;
+      window.removeEventListener("hero:swapped", onHeroSwapped);
       for (const fn of bootCleanups) {
         try {
           fn();
