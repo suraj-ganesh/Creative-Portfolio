@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
+  experimental: {
+    // Keep the client bundle lean — three.js is already split via
+    // dynamic import() in SiteFx, this trims anything that slips through.
+    optimizePackageImports: ["three", "gsap"],
+  },
 };
 
 export default nextConfig;

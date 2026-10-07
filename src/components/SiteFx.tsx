@@ -19,13 +19,83 @@ import { runPreloader } from "@/lib/fx/preloader";
 import { playHeroIntro, killHeroIntro, revealHeroInstant } from "@/lib/fx/heroIntro";
 import { initNav, closeMenu, updateNavIndicators } from "@/lib/fx/nav";
 import { initStickyName } from "@/lib/fx/sticky-name";
-import { initGlobe, destroyGlobe } from "@/lib/fx/globe";
-import { initFluidReveal, destroyFluidReveal } from "@/lib/fx/fluid";
 import { initContactDial } from "@/lib/fx/dial";
 import { initContactPills } from "@/lib/fx/pills";
 import { initOrbitTiles } from "@/lib/fx/orbit";
-import { initInfiniteCanvas, destroyInfiniteCanvas } from "@/lib/fx/canvas";
 import { initThemeDots } from "@/lib/fx/theme-liquid";
+
+/**
+ * Desktop-only FX (three.js globe, WebGL fluid, infinite canvas) are
+ * dynamically imported so phones never download them. Per Next.js
+ * lazy-loading guidance, `import()` splits these into separate chunks
+ * fetched only when `isDesktopFx()` is true.
+ */
+function isDesktopFx(): boolean {
+  try {
+    return window.matchMedia("(min-width: 992px)").matches;
+  } catch {
+    return true;
+  }
+}
+
+async function loadDesktopFx(
+  names: Array<"globe" | "fluid" | "canvas">,
+): Promise<Array<() => void>> {
+  if (!isDesktopFx()) return [];
+  const cleanups: Array<() => void> = [];
+  try {
+    if (names.includes("globe")) {
+      const m = await import("@/lib/fx/globe");
+      cleanups.push(m.initGlobe());
+    }
+  } catch (err) {
+    console.error("[fx] globe failed:", err);
+  }
+  try {
+    if (names.includes("fluid")) {
+      const m = await import("@/lib/fx/fluid");
+      cleanups.push(m.initFluidReveal());
+    }
+  } catch (err) {
+    console.error("[fx] fluid failed:", err);
+  }
+  try {
+    if (names.includes("canvas")) {
+      const m = await import("@/lib/fx/canvas");
+      cleanups.push(m.initInfiniteCanvas());
+    }
+  } catch (err) {
+    console.error("[fx] canvas failed:", err);
+  }
+  return cleanups;
+}
+
+async function destroyDesktopFx(): Promise<void> {
+  try {
+    const [g, f, c] = await Promise.all([
+      import("@/lib/fx/globe"),
+      import("@/lib/fx/fluid"),
+      import("@/lib/fx/canvas"),
+    ]);
+    try {
+      g.destroyGlobe();
+    } catch {
+      /* ignore */
+    }
+    try {
+      f.destroyFluidReveal();
+    } catch {
+      /* ignore */
+    }
+    try {
+      c.destroyInfiniteCanvas();
+    } catch {
+      /* ignore */
+    }
+  } catch {
+    /* chunk not loaded yet (mobile) — nothing to destroy */
+  }
+}
 
 function pageRoot(): HTMLElement | null {
   return document.querySelector("main");
@@ -117,9 +187,8 @@ export default function SiteFx() {
     }
     pageCleanups.current = [];
     killReveals();
-    destroyGlobe();
-    destroyFluidReveal();
-    destroyInfiniteCanvas();
+    // Desktop chunks may not be loaded on mobile — fire and forget.
+    void destroyDesktopFx();
   }, []);
 
   const initPage = useCallback(() => {
@@ -128,15 +197,25 @@ export default function SiteFx() {
       safe("reveals", () => initReveals()),
       safe("links", () => initLinks()),
       safe("tilt", () => initTiltCursor()),
-      safe("globe", () => initGlobe()),
-      safe("fluid", () => initFluidReveal()),
       safe("dial", () => initContactDial()),
       safe("pills", () => initContactPills()),
       safe("orbit", () => initOrbitTiles()),
-      safe("canvas", () => initInfiniteCanvas()),
       safe("sticky", () => initStickyName()),
       safe("themedots", () => initThemeDots()),
     ];
+    // Heavy desktop-only engines load in a separate chunk, after the
+    // lightweight FX above — phones skip this entirely (zero three.js).
+    if (isDesktopFx()) {
+      void loadDesktopFx(["globe", "fluid", "canvas"]).then((extra) => {
+        for (const fn of extra) pageCleanups.current.push(fn);
+        try {
+          lenisResize();
+          ScrollTrigger.refresh();
+        } catch {
+          /* ignore */
+        }
+      });
+    }
     lenisResize();
     ScrollTrigger.refresh();
   }, []);

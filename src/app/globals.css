@@ -1251,6 +1251,81 @@ body {
 }
 
 /** -------------------------------------------------
+ * WORK BENTO — masonry grid in native source formats
+ * ------------------------------------------------- */
+/* The Webflow base is a fixed-height 8-col grid. The bento instead flows
+ * every project as a masonry tile whose frame takes the source's own
+ * shape (9:16 tall, 16:9 wide), titles overlaid bottom-left in-frame. */
+.works-list {
+  display: block;
+  columns: 2;
+  column-gap: 8px;
+  padding-right: var(--_special-units---global--padding);
+  padding-left: var(--_special-units---global--padding);
+}
+@media (min-width: 768px) {
+  .works-list {
+    columns: 3;
+  }
+}
+@media (min-width: 1200px) {
+  .works-list {
+    columns: 4;
+  }
+}
+@media (min-width: 1800px) {
+  .works-list {
+    columns: 5;
+  }
+}
+/* Single tile: no fixed height — the media frame below sets it. */
+.works-list .works-bento-item {
+  height: auto;
+  margin: 0 0 8px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  background: #000;
+  overflow: clip;
+  border-radius: 16px;
+}
+/* Media frame in the source's native ratio (inline aspect-ratio set per
+ * tile from projectAspect(); these rules size + fill the frame). */
+.works-list .works-item-image-wrap {
+  display: block;
+  height: auto;
+}
+.works-list .works-item-image-inner {
+  height: auto;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: clip;
+  background: #000;
+}
+.works-list .works-bento-item.is-landscape .works-item-image-inner {
+  aspect-ratio: 16 / 9;
+}
+.works-list .works-item-image-inner img,
+.works-list .works-item-image-inner video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  display: block;
+}
+/* Title stays bottom-left inside the same frame. */
+.works-list .works-item-meta {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+}
+/* Keep the hover Play pill anchored to its tile in the flow. */
+.works-list .works-item-button {
+  z-index: 3;
+}
+
+/** -------------------------------------------------
  * THEME PICKER HOVER
  * ------------------------------------------------- */
 @media (min-width: 992px) {

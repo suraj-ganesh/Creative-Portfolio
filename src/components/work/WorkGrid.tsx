@@ -1,36 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { projects, type Project } from "@/data/projects";
+import { projects, projectAspect, type Project } from "@/data/projects";
 import VideoLightbox from "@/components/work/VideoLightbox";
-import { mediaUrl } from "@/lib/media";
-
-function playPreview(wrap: HTMLElement | null) {
-  const video = wrap?.querySelector<HTMLVideoElement>("video");
-  if (!video || !video.paused) return;
-  video.muted = true;
-  const attempt = video.play();
-  if (attempt && typeof attempt.catch === "function") {
-    attempt.catch(() => {});
-  }
-}
-
-function pausePreview(wrap: HTMLElement | null) {
-  const video = wrap?.querySelector<HTMLVideoElement>("video");
-  if (video && !video.paused) {
-    try {
-      video.pause();
-    } catch {
-      /* noop */
-    }
-  }
-}
+import { mediaUrl, rawMediaUrl, MOBILE_VIDEO_TRANSFORM } from "@/lib/media";
 
 export default function WorkGrid() {
   const [active, setActive] = useState<Project | null>(null);
   const closeLightbox = useCallback(() => setActive(null), []);
+  // Globe database videos only exist on desktop (the sphere never runs
+  // on phones).
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const desk = window.matchMedia("(min-width: 992px)");
+    const update = () => setIsDesktop(desk.matches);
+    update();
+    desk.addEventListener("change", update);
+    return () => desk.removeEventListener("change", update);
+  }, []);
 
-  // Pause card previews hidden by the Cards/Sphere filter so background
+  // Pause sphere videos hidden by the Cards/Sphere filter so background
   // tabs never decode video needlessly.
   useEffect(() => {
     const containers = Array.from(
@@ -156,18 +145,20 @@ export default function WorkGrid() {
               role="list"
               className="works-list w-dyn-items"
             >
-              {projects.map((project) => (
+              {projects.map((project) => {
+                // Bento tile: the frame takes the source's native shape —
+                // 9:16 clips render tall, 16:9 clips render wide.
+                const landscape = projectAspect(project) === "16:9";
+                return (
                 <div
                   key={project.slug}
                   data-haptic="medium"
                   data-works-item="wrap"
                   data-tab-content-reval="item"
-                  data-tilt="wrap"
                   id="w-node-_019a10b8-2b38-475b-0c97-40a12d4b0193-3f92bac2"
                   role="listitem"
-                  className="works-item w-dyn-item"
-                  onMouseEnter={(e) => playPreview(e.currentTarget)}
-                  onMouseLeave={(e) => pausePreview(e.currentTarget)}
+                  className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"}`}
+                  data-aspect={landscape ? "16:9" : "9:16"}
                 >
                   <a
                     className="works-item-link-overlay w-inline-block"
@@ -175,32 +166,22 @@ export default function WorkGrid() {
                     aria-label={`${project.title} — play video`}
                     onClick={(e) => openPlayer(e, project)}
                   ></a>
-                  <div className="works-item-image-wrap" data-tilt="card">
-                    <div className="works-item-image-inner">
-                      {project.videoSrc ? (
-                        <video
-                          src={mediaUrl(project.videoSrc)}
-                          muted
-                          loop
-                          playsInline
-                          preload="metadata"
-                          aria-label={project.title}
-                          className="img is-cover-works"
-                          style={{
-                            objectFit: "contain",
-                            height: "100%",
-                            width: "100%",
-                            background: "#000",
-                          }}
-                        />
-                      ) : (
-                        <img
-                          alt={project.title}
-                          loading="lazy"
-                          src={project.coverImage}
-                          className="img is-cover-works"
-                        />
-                      )}
+                  <div className="works-item-image-wrap">
+                    <div
+                      className="works-item-image-inner"
+                      style={{
+                        aspectRatio: landscape ? "16 / 9" : "9 / 16",
+                      }}
+                    >
+                      {/* Still frame only — the video runs in the lightbox
+                          once opened (tap anywhere on the tile). */}
+                      <img
+                        alt={project.title}
+                        loading="lazy"
+                        decoding="async"
+                        src={project.coverImage}
+                        className="img is-cover-works"
+                      />
                     </div>
                   </div>
                   <div className="works-item-meta">
@@ -225,7 +206,8 @@ export default function WorkGrid() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -328,20 +310,24 @@ export default function WorkGrid() {
                         role="listitem"
                         className="globe-database-item w-dyn-item"
                       >
-                        {p.videoSrc && (
+                        {p.videoSrc && isDesktop && (
                           <video
-                            src={mediaUrl(p.videoSrc)}
+                            src={mediaUrl(p.videoSrc, {
+                              transform: MOBILE_VIDEO_TRANSFORM,
+                            })}
+                            data-raw={rawMediaUrl(p.videoSrc)}
                             poster={p.coverImage}
                             muted
                             loop
                             playsInline
-                            preload="metadata"
+                            preload="none"
                             crossOrigin="anonymous"
                           />
                         )}
                         <img
                           src={p.coverImage}
                           loading="lazy"
+                          decoding="async"
                           alt={p.title}
                           height={1024}
                           className="img"

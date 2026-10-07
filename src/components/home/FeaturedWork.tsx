@@ -1,9 +1,23 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { projects } from "@/data/projects";
-import { mediaUrl } from "@/lib/media";
+import { mediaUrl, rawMediaUrl, MOBILE_VIDEO_TRANSFORM } from "@/lib/media";
 
 export default function FeaturedWork() {
   // Work-only projects (hideFromHome) never appear on the home page.
   const globeProjects = projects.filter((p) => p.coverImage && !p.hideFromHome);
+  // Globe videos only exist on desktop — on phones the globe engine never
+  // runs (and its textures would otherwise still download + stall the
+  // loader). Render the <video> nodes only after confirming desktop.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 992px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   return (
     <>
@@ -49,20 +63,24 @@ export default function FeaturedWork() {
                     role="listitem"
                     className="globe-database-item w-dyn-item"
                   >
-                    {p.videoSrc && (
+                    {p.videoSrc && isDesktop && (
                       <video
-                        src={mediaUrl(p.videoSrc)}
+                        src={mediaUrl(p.videoSrc, {
+                          transform: MOBILE_VIDEO_TRANSFORM,
+                        })}
+                        data-raw={rawMediaUrl(p.videoSrc)}
                         poster={p.coverImage}
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload="none"
                         crossOrigin="anonymous"
                       />
                     )}
                     <img
                       src={p.coverImage}
-                      loading="eager"
+                      loading={isDesktop ? "eager" : "lazy"}
+                      decoding="async"
                       alt={p.title}
                       className="img"
                     />
@@ -113,6 +131,7 @@ export default function FeaturedWork() {
                     <img
                       src={p.coverImage}
                       loading="lazy"
+                      decoding="async"
                       alt={p.title}
                       className="img width-auto"
                     />

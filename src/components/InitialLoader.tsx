@@ -38,6 +38,28 @@ const VIDEO_GRACE_MS = 2500;
 // Absolute ceiling: whatever happens, the cover must be gone by now.
 const FORCE_RELEASE_MS = 20000;
 const OBSERVE_WINDOW_MS = 4000;
+// Mobile fast-path: phones decode slowly and often sit on 3g/4g — never
+// gate the intro on video buffering there. Shorter ceilings only.
+const MOBILE_MIN_DISPLAY_MS = 800;
+const MOBILE_MAX_WAIT_MS = 3500;
+const MOBILE_FORCE_RELEASE_MS = 6000;
+
+function isMobileFastPath(): boolean {
+  try {
+    if (window.matchMedia("(max-width: 991px)").matches) return true;
+    if (window.matchMedia("(pointer: coarse)").matches) return true;
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    };
+    const conn = nav.connection;
+    if (conn?.saveData) return true;
+    if (conn?.effectiveType && /2g|3g|slow/.test(conn.effectiveType))
+      return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
 
 export default function InitialLoader() {
   // Rendered on first paint (including SSR) so the counter is visible
@@ -48,6 +70,12 @@ export default function InitialLoader() {
 
   useEffect(() => {
     const startedAt = performance.now();
+    const fastPath = isMobileFastPath();
+    const minDisplayMs = fastPath ? MOBILE_MIN_DISPLAY_MS : MIN_DISPLAY_MS;
+    const maxWaitMs = fastPath ? MOBILE_MAX_WAIT_MS : MAX_WAIT_MS;
+    const forceReleaseMs = fastPath
+      ? MOBILE_FORCE_RELEASE_MS
+      : FORCE_RELEASE_MS;
     let loadTime = -1;
     let disposed = false;
     let settled = false;
@@ -205,12 +233,13 @@ export default function InitialLoader() {
         videos.forEach((v) => readyVideos.add(v));
       }
 
-      const total = videos.size + 2; // +1 window load, +1 webfonts
-      const done =
-        readyVideos.size + (windowLoaded ? 1 : 0) + (fontsReady ? 1 : 0);
+      const total = fastPath ? 2 : videos.size + 2; // fast-path: window load + fonts only
+      const done = fastPath
+        ? (windowLoaded ? 1 : 0) + (fontsReady ? 1 : 0)
+        : readyVideos.size + (windowLoaded ? 1 : 0) + (fontsReady ? 1 : 0);
       const allReady = done >= total;
-      const timedOut = elapsed >= MAX_WAIT_MS;
-      const minElapsed = elapsed >= MIN_DISPLAY_MS;
+      const timedOut = elapsed >= maxWaitMs;
+      const minElapsed = elapsed >= minDisplayMs;
 
       let target: number;
       if ((allReady || timedOut) && minElapsed) {
@@ -279,7 +308,7 @@ export default function InitialLoader() {
       }
       document.body.classList.remove("is-initial-loading");
       setGone(true);
-    }, FORCE_RELEASE_MS);
+    }, forceReleaseMs);
 
     return () => {
       disposed = true;

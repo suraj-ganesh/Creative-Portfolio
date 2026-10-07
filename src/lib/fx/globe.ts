@@ -69,21 +69,6 @@ function fibSphere(count: number): THREE.Vector3[] {
 
 const bobPhase = (t: number) => 0.5 * (Math.sin(t * Math.PI * 2) + 1);
 
-function pickSrc(img: HTMLImageElement, minW = 1024): string {
-  const srcset = img.srcset || "";
-  if (!srcset) return img.src || img.dataset.src || "";
-  const cands = srcset
-    .split(",")
-    .map((s) => {
-      const [url, w] = s.trim().split(/\s+/);
-      return { url, w: parseInt(w, 10) || 0 };
-    })
-    .filter((c) => c.w > 0)
-    .sort((a, b) => a.w - b.w);
-  const best = cands.find((c) => c.w >= minW) ?? cands[cands.length - 1];
-  return best ? best.url : img.src || img.dataset.src || "";
-}
-
 function fadeInfoShow(el: HTMLElement) {
   el.style.display = "block";
   gsap.fromTo(
@@ -151,7 +136,12 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   const BOB_FREQ = 1.5;
   const ORDER_PINNED = 999;
   const ORDER_LIFT = 500;
-  const MAX_CONCURRENT = 3;
+  const MAX_CONCURRENT = 6;
+  // A sphere card exists ONLY once its video can play — no still frames,
+  // ever. Failed loads retry, then the item is skipped outright.
+  const VIDEO_LOAD_TIMEOUT_MS = 15000;
+  const VIDEO_LOAD_RETRIES = 3;
+  const VIDEO_RETRY_DELAY_MS = 2500;
   const REVEAL_DUR = 1.4;
   const REVEAL_STAG = 0.015;
   const HIDE_DUR = 0.6;
@@ -242,7 +232,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     dragVel = 0;
   };
 
-  // Texture queue (max 3 concurrent, like legacy).
+  // Texture queue (video loads gate card creation — see loadVideoCard).
   const queue: Array<(done: () => void) => void> = [];
   let inFlight = 0;
   const pump = () => {
@@ -256,6 +246,130 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     }
   };
 
+  let tornDown = false;
+
+  /**
+   * Load one sphere video and create its card once playback is possible.
+   * Stills are never used: on failure the compressed rendition falls back
+   * to the raw URL, then the whole load retries a few times, then the item
+   * is skipped (no card) rather than left behind as a frozen frame.
+   */
+  const loadVideoCard = (
+    vid: HTMLVideoElement,
+    dir: THREE.Vector3,
+    slug: string,
+    done: () => void,
+    rawTried: boolean,
+    attempt: number,
+  ): void => {
+    if (tornDown) {
+      done();
+      return;
+    }
+    const tex = new THREE.VideoTexture(vid);
+    tex.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
+    tex.colorSpace = THREE.SRGBColorSpace;
+    let settled = false;
+    let timer = 0;
+    let triedRaw = rawTried;
+    const disposeTex = () => {
+      try {
+        tex.dispose();
+      } catch {
+        /* noop */
+      }
+    };
+    const arm = () => {
+      vid.addEventListener("canplay", onReady, { once: true });
+      vid.addEventListener("error", onFail, { once: true });
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (vid.readyState >= 2 && vid.videoWidth > 0) onReady();
+        else onFail();
+      }, VIDEO_LOAD_TIMEOUT_MS);
+    };
+    const onReady = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      if (tornDown) {
+        disposeTex();
+        done();
+        return;
+      }
+      addCard(tex, dir, slug, done, vid);
+      cardVideos.add(vid);
+      // Cards arriving after the reveal start at once; earlier ones are
+      // started together by playCardVideos() on reveal. The watchdog below
+      // keeps every sphere video running from then on.
+      if (globeState === "shown") {
+        try {
+          const attemptPlay = vid.play();
+          if (attemptPlay && typeof attemptPlay.catch === "function") {
+            attemptPlay.catch(() => {});
+          }
+        } catch {
+          /* watchdog retries */
+        }
+      }
+    };
+    const onFail = () => {
+      if (settled) return;
+      const raw = vid.getAttribute("data-raw");
+      if (!triedRaw && raw && vid.src !== raw) {
+        triedRaw = true;
+        // Detach this round's listeners before re-arming — otherwise the
+        // stale set would double-handle the retry (double requeue / cards).
+        vid.removeEventListener("canplay", onReady);
+        vid.removeEventListener("error", onFail);
+        try {
+          vid.preload = "auto";
+          vid.muted = true;
+          vid.src = raw;
+          vid.load();
+        } catch {
+          /* arm() events settle the retry */
+        }
+        arm();
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timer);
+      disposeTex();
+      if (attempt < VIDEO_LOAD_RETRIES && !tornDown) {
+        // Free this queue slot now; the retry rejoins the back of the line.
+        queue.push((retryDone) =>
+          loadVideoCard(vid, dir, slug, retryDone, true, attempt + 1),
+        );
+        window.setTimeout(() => {
+          pump();
+        }, VIDEO_RETRY_DELAY_MS);
+        done();
+        return;
+      }
+      cardVideos.delete(vid);
+      done();
+    };
+    try {
+      // Database <video> nodes use preload="none" so nothing buffers until
+      // this explicit load.
+      vid.preload = "auto";
+      vid.muted = true;
+      if (vid.readyState >= 2 && vid.videoWidth > 0) {
+        onReady();
+      } else {
+        try {
+          vid.load();
+        } catch {
+          /* arm() events settle the job */
+        }
+        arm();
+      }
+    } catch {
+      onFail();
+    }
+  };
+
   const addCard = (
     tex: THREE.Texture,
     dir: THREE.Vector3,
@@ -263,7 +377,9 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     done: () => void,
     vid: HTMLVideoElement | null = null,
   ) => {
-    tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    // Cards render small on the sphere — 2x anisotropy is visually
+    // identical to 4x here at a fraction of the upload cost.
+    tex.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
     tex.generateMipmaps = true;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     // Color textures are authored in sRGB. Without this flag three
@@ -317,11 +433,9 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     } catch {
       /* noop */
     }
-    try {
-      renderer.compile(scene, camera);
-    } catch {
-      /* noop */
-    }
+    // NOTE: no renderer.compile() per card — the first render compiles the
+    // shared MeshBasicMaterial program once; compiling per card rescanned
+    // the whole scene on every texture arrival.
     const card: GlobeCard = {
       mesh,
       mat,
@@ -404,12 +518,38 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   let dragVel = 0;
   let spin = 0;
   const reduced = prefersReduced();
+  let lastWatchdog = 0;
 
   const tick = () => {
     raf = requestAnimationFrame(tick);
     const now = performance.now();
     const dt = last < 0 ? 0.016 : Math.min((now - last) / 1000, 0.05);
     last = now;
+    // Watchdog: sphere videos must keep running while shown — resume any
+    // that stalled (decoder pressure, backgrounded tab, blocked autoplay).
+    // Throttled to once per 3s so it costs nothing per frame.
+    if (now - lastWatchdog > 3000) {
+      lastWatchdog = now;
+      if (
+        globeState === "shown" &&
+        visible &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        cardVideos.forEach((v) => {
+          if (v.paused) {
+            try {
+              const attempt = v.play();
+              if (attempt && typeof attempt.catch === "function") {
+                attempt.catch(() => {});
+              }
+            } catch {
+              /* retry on the next pass */
+            }
+          }
+        });
+      }
+    }
     const step = Math.min(1, 60 * dt);
     elapsed += dt * TIME_RATE;
     if (hovering || dragging || pinned) {
@@ -579,50 +719,9 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     } as CSSStyleDeclaration);
   }
   if (items.length) {
-    const loader = new THREE.TextureLoader();
-    loader.crossOrigin = "anonymous";
     const dirs = fibSphere(Math.ceil(2.5 * items.length))
       .filter((v) => Math.abs(v.y) < 0.55)
       .slice(0, items.length);
-    const loadVideoCard = (
-      vid: HTMLVideoElement,
-      poster: string | null,
-      dir: THREE.Vector3,
-      slug: string,
-      done: () => void,
-    ) => {
-      cardVideos.add(vid);
-      const tex = new THREE.VideoTexture(vid);
-      let settled = false;
-      const finish = (ok: boolean) => {
-        if (settled) return;
-        settled = true;
-        if (ok) {
-          addCard(tex, dir, slug, done, vid);
-        } else {
-          cardVideos.delete(vid);
-          try {
-            tex.dispose();
-          } catch {
-            /* noop */
-          }
-          if (poster) {
-            loader.load(
-              poster,
-              (t) => addCard(t, dir, slug, done, null),
-              undefined,
-              () => done(),
-            );
-          } else done();
-        }
-      };
-      if (vid.readyState >= 2 && vid.videoWidth > 0) finish(true);
-      else {
-        vid.addEventListener("canplay", () => finish(true), { once: true });
-        vid.addEventListener("error", () => finish(false), { once: true });
-        window.setTimeout(() => finish(vid.readyState >= 2), 15000);
-      }
-    };
     items.forEach((item, idx) => {
       const dir = dirs[idx];
       if (!dir) return;
@@ -635,16 +734,13 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
         ""
       ).trim();
       if (vid && vid.getAttribute("src")) {
-        const poster = img ? pickSrc(img, 1024) : null;
-        queue.push((done) => loadVideoCard(vid, poster, dir, slug, done));
+        // Videos only: the card is created once this video can play (see
+        // loadVideoCard). Items without a playable video are skipped — the
+        // sphere never shows still frames.
+        queue.push((done) => loadVideoCard(vid, dir, slug, done, false, 0));
         return;
       }
-      if (!img) return;
-      const url = pickSrc(img, 1024);
-      if (!url) return;
-      queue.push((done) => {
-        loader.load(url, (tex) => addCard(tex, dir, slug, done), undefined, () => done());
-      });
+      // No video backing this item — skip it (stills don't belong here).
     });
     pump();
   }
@@ -911,6 +1007,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   }
 
   function teardown() {
+    tornDown = true;
     killReveal();
     stop();
     pauseCardVideos();

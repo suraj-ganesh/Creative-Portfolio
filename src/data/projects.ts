@@ -895,3 +895,26 @@ export const projects: Project[] = [
     hideFromHome: true,
   },
 ];
+
+/**
+ * Native source format per project, verified against poster dimensions
+ * (360x640 / 1200x2134 = 9:16 vertical, 360x202 / 1200x676 = 16:9).
+ * Everything not listed here is a vertical 9:16 clip — the library default.
+ */
+export type ProjectAspect = "9:16" | "16:9";
+
+const LANDSCAPE_SLUGS = new Set([
+  "asiking-co-workers-to-write-something", // 360x202
+  "classmate-notebook-showcase-6", // 360x202 (.mov)
+  "genz-protest-martyrs", // 360x202 (.mov)
+  "gsl-promo-3", // 360x202
+  "gsl-promo-4", // 360x202
+  "hangman-vlogg", // 360x202
+  "hike-with-boys-vlog", // 360x202
+  "marketing-promo-edit", // 1200x676 — Classmate Scribble with Me
+  "short-film-cut", // 1200x676 — Digital Marketing Workshop
+]);
+
+export function projectAspect(p: Project): ProjectAspect {
+  return LANDSCAPE_SLUGS.has(p.slug) ? "16:9" : "9:16";
+}

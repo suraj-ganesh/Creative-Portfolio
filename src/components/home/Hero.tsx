@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
 import { defaultOrbitCards, type OrbitCard } from "@/data/orbitTiles";
@@ -9,6 +9,105 @@ import { mediaUrl } from "@/lib/media";
 
 const HERO_MARK_SRC = "/images/hero-mark.png";
 const HERO_MARK_WHITE_SRC = "/images/hero-mark-white.png";
+
+/** True on phones / coarse pointers / Save-Data — flips after mount (no SSR mismatch). */
+function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 991px)");
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const update = () => setMobile(mq.matches || coarse.matches);
+    update();
+    mq.addEventListener("change", update);
+    coarse.addEventListener("change", update);
+    return () => {
+      mq.removeEventListener("change", update);
+      coarse.removeEventListener("change", update);
+    };
+  }, []);
+  return mobile;
+}
+
+/**
+ * Orbit tile: poster <img> until the tile nears the viewport, then swaps
+ * in the compressed video which keeps running (muted loop). Mobile stays
+ * lite — only the front tile streams video, the rest keep their posters
+ * (tap opens the modal player). Desktop plays every tile like before.
+ */
+function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
+  const isMobile = useIsMobile();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(eager);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Observe visibility — only fetch/decode video when actually on screen.
+  useEffect(() => {
+    if (inView) return;
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [inView]);
+
+  // Pause offscreen videos, resume when scrolled back — tiles keep running
+  // while visible instead of stalling after one play.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !inView) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const vis = entries[0]?.isIntersecting;
+        try {
+          if (vis) void v.play().catch(() => {});
+          else v.pause();
+        } catch {
+          /* ignore */
+        }
+      },
+      { threshold: 0.1 },
+    );
+    io.observe(v);
+    return () => io.disconnect();
+  }, [inView]);
+
+  const showVideo = Boolean(card.videoSrc) && inView && (!isMobile || eager);
+  return (
+    <div ref={wrapRef} style={{ width: "100%", height: "100%" }}>
+      {showVideo ? (
+        <video
+          ref={videoRef}
+          src={mediaUrl(card.videoSrc, { mobile: isMobile })}
+          poster={card.image}
+          muted
+          loop
+          playsInline
+          autoPlay
+          preload={isMobile ? "none" : "metadata"}
+          aria-label={card.title}
+          className="cover-image"
+          disablePictureInPicture
+        />
+      ) : (
+        <img
+          src={card.image}
+          loading="lazy"
+          decoding="async"
+          alt={card.title}
+          className="cover-image"
+        />
+      )}
+    </div>
+  );
+}
 
 export default function Hero() {
   // Custom motion mark with totem fallback: if the artist-supplied SVG
@@ -317,26 +416,7 @@ export default function Hero() {
                           card.aspect === "16:9" ? "16 / 9" : "9 / 16",
                       }}
                     >
-                      {card.videoSrc ? (
-                        <video
-                          src={mediaUrl(card.videoSrc)}
-                          poster={card.image}
-                          muted
-                          loop
-                          playsInline
-                          autoPlay
-                          preload="metadata"
-                          aria-label={card.title}
-                          className="cover-image"
-                        />
-                      ) : (
-                        <img
-                          src={card.image}
-                          loading="lazy"
-                          alt={card.title}
-                          className="cover-image"
-                        />
-                      )}
+                      <OrbitTileMedia card={card} eager={idx === 0} />
                     </div>
                   </div>
                 ))}

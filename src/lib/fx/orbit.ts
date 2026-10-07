@@ -36,6 +36,17 @@ const SPIN_DURATION: number = 24;
 const STATUS_ATTR = "data-orbit-tiles-item-status";
 
 function initRoot(root: HTMLElement): Cleanup {
+  // Mobile lite: blur+brightness per-tile per-frame is the single most
+  // expensive style on phone GPUs (forces a repaint per tile). Drop the
+  // filter entirely there — transform/opacity alone composite on the GPU.
+  let lite = false;
+  try {
+    lite =
+      window.matchMedia("(max-width: 991px)").matches ||
+      window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    lite = false;
+  }
   const collection = root.querySelector<HTMLElement>(
     "[data-orbit-tiles-collection]",
   );
@@ -93,14 +104,25 @@ function initRoot(root: HTMLElement): Cleanup {
       const r = ((i - states[i].progress) / count) * Math.PI * 2;
       const front = (Math.cos(r) + 1) / 2;
       const eased = Math.pow(front, 1.3);
-      gsap.set(el, {
-        x: Math.sin(r) * rx,
-        y: Math.cos(r) * ry,
-        scale: gsap.utils.interpolate(MIN_SCALE, 1, eased),
-        opacity: gsap.utils.interpolate(MIN_OPACITY, 1, eased),
-        filter: `blur(${gsap.utils.interpolate(blurMax, 0, eased)}px) brightness(${gsap.utils.interpolate(MIN_BRIGHTNESS, 1, eased)})`,
-        zIndex: Math.round(1000 * eased),
-      });
+      if (lite) {
+        // GPU-cheap path: transform + opacity only, no filter.
+        gsap.set(el, {
+          x: Math.sin(r) * rx,
+          y: Math.cos(r) * ry,
+          scale: gsap.utils.interpolate(MIN_SCALE, 1, eased),
+          opacity: gsap.utils.interpolate(MIN_OPACITY, 1, eased),
+          zIndex: Math.round(1000 * eased),
+        });
+      } else {
+        gsap.set(el, {
+          x: Math.sin(r) * rx,
+          y: Math.cos(r) * ry,
+          scale: gsap.utils.interpolate(MIN_SCALE, 1, eased),
+          opacity: gsap.utils.interpolate(MIN_OPACITY, 1, eased),
+          filter: `blur(${gsap.utils.interpolate(blurMax, 0, eased)}px) brightness(${gsap.utils.interpolate(MIN_BRIGHTNESS, 1, eased)})`,
+          zIndex: Math.round(1000 * eased),
+        });
+      }
     });
   };
 

@@ -25,6 +25,10 @@ function teardownInstance(instance: Lenis, raf: ((time: number) => void) | null)
  * smoothWheel, touchMultiplier 2, exponential easing, driven via gsap.ticker
  * with lagSmoothing(0), forwarding scroll events to ScrollTrigger.
  *
+ * Mobile fast-path: smooth-scroll hijacking janks on touch devices and
+ * costs a full rAF loop + ScrollTrigger churn. On coarse pointers / small
+ * viewports we skip Lenis entirely and keep native scroll (zero JS cost).
+ *
  * Idempotent: re-init destroys the previous instance first. Under
  * prefers-reduced-motion no instance is created (native scroll stays).
  */
@@ -37,6 +41,18 @@ export function initLenis(): Cleanup {
     teardownInstance(prev, prevRaf);
   }
   if (prefersReduced()) return () => {};
+  try {
+    // Touch phones/tablets: native scroll is faster and doesn't fight the
+    // browser's own fling physics. Skip Lenis to save CPU + battery.
+    if (
+      window.matchMedia("(max-width: 991px)").matches ||
+      window.matchMedia("(pointer: coarse)").matches
+    ) {
+      return () => {};
+    }
+  } catch {
+    /* matchMedia unavailable — fall through to Lenis */
+  }
 
   const instance = new Lenis({
     wrapper: window,

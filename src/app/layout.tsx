@@ -56,6 +56,8 @@ export default function RootLayout({
     <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.prod.website-files.com" />
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="icon" type="image/png" href="/images/hero-mark-icon.png" />
         <script
           dangerouslySetInnerHTML={{

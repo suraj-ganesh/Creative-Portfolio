@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
+import { projectDescription } from "@/data/videoDescriptions";
 import { lenisStart, lenisStop } from "@/lib/fx/lenis";
-import { mediaUrl } from "@/lib/media";
+import { mediaUrl, rawMediaUrl } from "@/lib/media";
 
 /**
  * Fullscreen video lightbox for the Work section. Opens on card press,
- * autoplays with sound (the press counts as the user gesture), locks
- * page scroll while open, and closes on backdrop click / Escape / button.
+ * locks page scroll while open, and closes on backdrop click / Escape /
+ * button. Source chain: compressed rendition -> raw delivery URL -> local
+ * file, advancing on error/stall so a single broken URL form can never
+ * leave the player dark. Starts with sound (the press counts as the user
+ * gesture); if the browser still blocks it, falls back to muted playback
+ * so the video runs either way — unmute via the visible controls.
  */
 export default function VideoLightbox({
   project,
@@ -18,29 +23,34 @@ export default function VideoLightbox({
   onClose: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [stage, setStage] = useState(0);
+  const [dead, setDead] = useState(false);
+  const sources = [
+    mediaUrl(project.videoSrc),
+    rawMediaUrl(project.videoSrc),
+    project.videoSrc,
+  ].filter((s): s is string => Boolean(s));
+
+  // Reset the chain when a different project is opened in place.
+  useEffect(() => {
+    setStage(0);
+    setDead(false);
+  }, [project.videoSrc]);
 
   useEffect(() => {
     lenisStop();
     document.body.style.overflow = "hidden";
-    // The card press that opened the lightbox counts as the user gesture,
-    // so the player starts WITH sound. Bare `autoPlay` is often blocked
-    // once React re-renders off the gesture thread, so kick playback
-    // explicitly and guarantee the element is unmuted. If the browser
-    // still blocks it, the rejection is swallowed and the visible
-    // controls let one tap start it with audio.
-    const video = videoRef.current;
-    if (video) {
+    // Free decoders: pause the bento tiles behind the player.
+    const tiles = Array.from(
+      document.querySelectorAll<HTMLVideoElement>(".works-list video"),
+    );
+    tiles.forEach((t) => {
       try {
-        video.muted = false;
-        video.volume = 1;
-        const attempt = video.play();
-        if (attempt && typeof attempt.catch === "function") {
-          attempt.catch(() => {});
-        }
+        t.pause();
       } catch {
-        /* controls remain as fallback */
+        /* noop */
       }
-    }
+    });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -49,10 +59,95 @@ export default function VideoLightbox({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
       lenisStart();
+      // Resume tiles visible behind the player on close.
+      document
+        .querySelectorAll<HTMLVideoElement>(".works-list video")
+        .forEach((t) => {
+          try {
+            const r = t.getBoundingClientRect();
+            if (r.bottom > 0 && r.top < window.innerHeight) {
+              t.muted = true;
+              const attempt = t.play();
+              if (attempt && typeof attempt.catch === "function") {
+                attempt.catch(() => {});
+              }
+            }
+          } catch {
+            /* tiles resume on next scroll either way */
+          }
+        });
     };
   }, [onClose]);
 
+  // Drive playback per source stage: (re)load, try with sound first for
+  // the gesture, fall back to muted so it always runs. Errors and stalls
+  // advance to the next source.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || dead) return;
+    const src = sources[stage];
+    if (!src) {
+      setDead(true);
+      return;
+    }
+    let disposed = false;
+    const playWithSound = () => {
+      try {
+        video.muted = false;
+        video.volume = 1;
+        const attempt = video.play();
+        if (attempt && typeof attempt.catch === "function") {
+          attempt.catch(() => {
+            // Blocked with sound — run muted instead; user unmutes via controls.
+            if (disposed) return;
+            try {
+              video.muted = true;
+              const retry = video.play();
+              if (retry && typeof retry.catch === "function") {
+                retry.catch(() => {});
+              }
+            } catch {
+              /* controls remain as fallback */
+            }
+          });
+        }
+      } catch {
+        /* controls remain as fallback */
+      }
+    };
+    const onCanPlay = () => {
+      window.clearTimeout(timer);
+      playWithSound();
+    };
+    const onError = () => {
+      window.clearTimeout(timer);
+      if (!disposed) {
+        if (stage + 1 < sources.length) setStage(stage + 1);
+        else setDead(true);
+      }
+    };
+    const timer = window.setTimeout(() => {
+      // Stalled with no data — treat like an error.
+      if (video.readyState < 2) onError();
+    }, 25000);
+    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("error", onError);
+    try {
+      video.load();
+    } catch {
+      /* events settle the stage */
+    }
+    playWithSound();
+    return () => {
+      disposed = true;
+      window.clearTimeout(timer);
+      video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("error", onError);
+    };
+  }, [project.videoSrc, stage]);
+
   if (!project.videoSrc) return null;
+  const description = projectDescription(project.slug);
 
   return (
     <div
@@ -103,23 +198,38 @@ export default function VideoLightbox({
             Close
           </button>
         </div>
-        <video
-          ref={videoRef}
-          key={project.videoSrc}
-          src={mediaUrl(project.videoSrc)}
-          controls
-          autoPlay
-          muted={false}
-          playsInline
-          preload="auto"
-          style={{
-            width: "100%",
-            maxHeight: "76vh",
-            background: "#000",
-            display: "block",
-            objectFit: "contain",
-          }}
-        />
+        {dead ? (
+          <div
+            style={{
+              width: "100%",
+              minHeight: "40vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#000",
+            }}
+          >
+            <div className="p1" style={{ color: "#fff" }}>
+              This video failed to load — check your connection and try again.
+            </div>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            key={project.videoSrc}
+            src={sources[stage]}
+            controls
+            playsInline
+            preload="auto"
+            style={{
+              width: "100%",
+              maxHeight: "76vh",
+              background: "#000",
+              display: "block",
+              objectFit: "contain",
+            }}
+          />
+        )}
         <div
           style={{
             marginTop: 12,
@@ -128,6 +238,14 @@ export default function VideoLightbox({
           <div className="p1" style={{ color: "rgba(255,255,255,0.65)" }}>
             Video Editing · Sound Design · Color Correction
           </div>
+          {description && (
+            <div
+              className="p1"
+              style={{ color: "#fff", marginTop: 6, maxWidth: "60ch" }}
+            >
+              {description}
+            </div>
+          )}
         </div>
       </div>
     </div>
