@@ -993,6 +993,18 @@ function wireWorksIntroMask(scope: ParentNode, local: ScrollTrigger[]): void {
   );
   const out = scope.querySelector<HTMLElement>('[data-works-intro="out"]');
   if (!overlay || !trigger || !out) return;
+  // Mobile shows the overlay as a plain static header (see globals.css) —
+  // the scrubbed hole mask stays desktop-only so a stalled/mis-measured
+  // scrub can never seal the grid behind a solid cover on phones.
+  try {
+    if (window.matchMedia("(max-width: 991px)").matches) {
+      overlay.style.clipPath = "none";
+      overlay.style.setProperty("--hole-progress", "1");
+      return;
+    }
+  } catch {
+    /* matchMedia unavailable — fall through to the desktop path */
+  }
   const leftText = scope.querySelector<HTMLElement>(
     '[data-works-intro="left-text"]',
   );

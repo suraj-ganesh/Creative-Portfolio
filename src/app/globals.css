@@ -1378,6 +1378,33 @@ body {
 }
 
 /** -------------------------------------------------
+ * WORK PAGE MOBILE — static overlay header + chrome spacing
+ * ------------------------------------------------- */
+@media (max-width: 991px) {
+  /* The scroll-driven hole mask is a desktop flourish. On phones the
+   * overlay becomes a plain static header so the bento grid is directly
+   * reachable no matter what scroll/animation does. */
+  .works-overlay {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    clip-path: none !important;
+    padding-top: 110px;
+    padding-bottom: 32px;
+  }
+  /* Fixed chrome crowds on narrow screens (rem units shrink with the
+   * 1vw root scale) — give the CV button a real pixel gap below the
+   * lever so both are tappable and clearly separated. */
+  .cv-button {
+    top: calc(
+      var(--_special-units---global--padding, 1rem) + 3.4rem +
+        max(4rem, 47px) + 14px
+    );
+  }
+}
+
+/** -------------------------------------------------
  * 404 PAGE — main logo + lowered lever
  * ------------------------------------------------- */
 /* White mark only on the dark theme; dark mark everywhere else. */
