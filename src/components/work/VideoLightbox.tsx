@@ -191,8 +191,12 @@ export default function VideoLightbox({
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.4)",
               borderRadius: 999,
-              padding: "6px 18px",
+              padding: "12px 24px",
               cursor: "pointer",
+              minHeight: "44px",
+              minWidth: "44px",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             Close
@@ -227,6 +231,7 @@ export default function VideoLightbox({
               background: "#000",
               display: "block",
               objectFit: "contain",
+              touchAction: "manipulation",
             }}
           />
         )}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import WorkGrid from "@/components/work/WorkGrid";
+import WorkHero from "@/components/work/WorkHero";
 import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
@@ -63,7 +63,7 @@ export default function WorkPage() {
       </section>
 
       <div className="page-wrap">
-        <WorkGrid />
+        <WorkHero />
         <Footer />
         <ThemeChangeOverlay />
       </div>

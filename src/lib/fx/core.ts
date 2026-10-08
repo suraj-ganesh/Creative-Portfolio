@@ -21,8 +21,24 @@ export { gsap, ScrollTrigger, SplitText, Draggable, InertiaPlugin };
 export const DUR = { XS: 0.2, S: 0.4, M: 0.8, L: 1.2, STAGGER: 0.1 } as const;
 
 export const DESKTOP_QUERY = "(min-width: 992px)";
+export const MOBILE_QUERY = "(max-width: 991px)";
 export const isDesktop = () =>
   window.matchMedia(DESKTOP_QUERY).matches;
+/**
+ * True on phones / small tablets / coarse-pointer devices (touch screens).
+ * Single source of truth — all fx modules gate animations on this instead
+ * of each doing their own matchMedia inline.
+ */
+export const isMobile = (): boolean => {
+  try {
+    return (
+      window.matchMedia(MOBILE_QUERY).matches ||
+      window.matchMedia("(pointer: coarse)").matches
+    );
+  } catch {
+    return false;
+  }
+};
 // Legacy parity: the original bleibtgleich.dev animates unconditionally —
 // its bundle never consults prefers-reduced-motion. Gating on it here made
 // the whole site render static for anyone with the OS "animation effects"

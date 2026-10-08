@@ -1,4 +1,4 @@
-import { gsap, ScrollTrigger, SplitText, qa, q } from "@/lib/fx/core";
+import { gsap, ScrollTrigger, SplitText, qa, q, isMobile } from "@/lib/fx/core";
 import {
   animateLogoGoo,
   playLogoMorph,
@@ -144,6 +144,14 @@ export function revealHeroInstant(): void {
 export function playHeroIntro(): void {
   if (typeof window === "undefined") return;
   killHeroIntro();
+
+  // Mobile fast-path: the full serial timeline (SplitText DOM splits,
+  // blur/scaleY morphing, elastic logo) drops frames on low-end phones.
+  // Instantly reveal everything instead — zero jank, full content visible.
+  if (isMobile()) {
+    revealHeroInstant();
+    return;
+  }
 
   // NOTE: no prefers-reduced-motion early-out here on purpose. The rest
   // of the site (core.prefersReduced) animates unconditionally for legacy
