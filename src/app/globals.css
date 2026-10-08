@@ -1322,6 +1322,8 @@ body {
   z-index: 3;
 }
 
+
+
 /** -------------------------------------------------
  * STATIC HERO (phones / low-power — no GSAP/WebGL/video)
  * ------------------------------------------------- */
@@ -1375,9 +1377,20 @@ body {
   object-fit: cover;
   display: block;
 }
+@keyframes hero-lite-mark-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .hero-lite .intro-inner,
-  .hero-lite__tile {
+  .hero-lite__tile,
+  .hero-lite__mark img {
     animation: none;
   }
 }
@@ -1531,7 +1544,10 @@ body:has(main[data-page="error-404"]) .mc-lever {
     display: none !important;
   }
 
-  /* Pills in natural CSS flow on mobile (JS physics engine is skipped). */
+  /* Pills in natural CSS flow on mobile (JS physics engine is skipped).
+     They must also be VISIBLE (base keeps them opacity:0 for the JS drop
+     animation) and must not swallow page scroll (base touch-action:none
+     is for desktop dragging). */
   [data-contact-pills] {
     position: relative !important;
     display: flex;
@@ -1543,6 +1559,8 @@ body:has(main[data-page="error-404"]) .mc-lever {
     transform: none !important;
     top: auto !important;
     left: auto !important;
+    opacity: 1 !important;
+    touch-action: manipulation !important;
   }
 
   /* Disable heavy box-shadow stacks on mobile to reduce paint cost. */
@@ -1566,5 +1584,93 @@ body:has(main[data-page="error-404"]) .mc-lever {
   }
   main {
     animation: mobile-page-enter 0.3s ease-out both;
+  }
+}
+
+/** -------------------------------------------------
+ * MOBILE LAYOUT FIXES (phones/small tablets ONLY)
+ * Strictly max-width:991px — desktop (>991px) is untouched.
+ * ------------------------------------------------- */
+@media (max-width: 991px) {
+  /* HERO (static HeroLite): stack the grid as one column in DOM order.
+     The children carry no Webflow grid-area ids, so the 6-column mobile
+     grid scattered them side-by-side. */
+  .hero-lite .grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* Kill the desktop 44.25vh name-drop spacer inside the stacked hero. */
+  .hero-lite .hero-heading-wrap {
+    gap: 0;
+  }
+  /* The mark is absolutely positioned on desktop — flow it normally. */
+  .hero-lite .icon-wrap.is-logo {
+    position: relative;
+    top: auto;
+  }
+  /* Initial logo animation (mobile only — desktop uses the JS goo morph):
+     the mark pops in once on load, transform-only so it stays GPU-cheap. */
+  .hero-lite__mark img {
+    animation: hero-lite-mark-pop 0.8s var(--ease-out) 0.1s both;
+    transform-origin: 50% 50%;
+  }
+  /* The generic rule hides this stage on phones (meant for the WebGL
+     hero), which also buried the static poster collage. Show it in-flow. */
+  .hero-lite .reveal-block-wrap {
+    display: block;
+    position: relative;
+    inset: auto;
+    height: auto;
+    background: transparent;
+  }
+
+  /* WORK PAGE: two-column masonry of video tiles. */
+  .works-list {
+    display: block;
+    columns: 2;
+    column-gap: 8px;
+  }
+  /* Play affordance on mobile tiles (the hover Play pill is desktop-only):
+     a tap target hint so videos are discoverable as playable. */
+  .works-list .works-item-link-overlay::after {
+    content: "▶";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    font-size: 15px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* CONTACT: tidy the chip cloud above the name. */
+  .cg-field {
+    justify-content: center;
+  }
+
+  /* Let tall mobile content (work grid, contact pills) size naturally
+     instead of squeezing into a fixed viewport-height box. */
+  .page-wrap {
+    height: auto;
+    min-height: 100svh;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Keep the cropped wordmark + phone card inside narrow viewports. */
+  .cg-name.is-cut {
+    font-size: 12vw;
+  }
+  .cg-phone-card {
+    padding: 2rem 1.6rem;
   }
 }

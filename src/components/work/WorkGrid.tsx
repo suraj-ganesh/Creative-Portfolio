@@ -14,6 +14,69 @@ export default function WorkGrid() {
     setActive(project);
   };
 
+  const renderTile = (project: Project) => {
+    // Bento tile: the frame takes the source's native shape —
+    // 9:16 clips render tall, 16:9 clips render wide.
+    const landscape = projectAspect(project) === "16:9";
+    return (
+      <div
+        key={project.slug}
+        data-haptic="medium"
+        data-works-item="wrap"
+        data-tab-content-reval="item"
+        role="listitem"
+        className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"}`}
+        data-aspect={landscape ? "16:9" : "9:16"}
+      >
+        <a
+          className="works-item-link-overlay w-inline-block"
+          href="#work"
+          aria-label={`${project.title} — play video`}
+          onClick={(e) => openPlayer(e, project)}
+        ></a>
+        <div className="works-item-image-wrap">
+          <div
+            className="works-item-image-inner"
+            style={{
+              aspectRatio: landscape ? "16 / 9" : "9 / 16",
+            }}
+          >
+            {/* Still frame only — the video runs in the lightbox
+                once opened (tap anywhere on the tile). */}
+            <img
+              alt={project.title}
+              loading="lazy"
+              decoding="async"
+              src={project.coverImage}
+              className="img is-cover-works"
+            />
+          </div>
+        </div>
+        <div className="works-item-meta">
+          <div className="p1">{project.title}</div>
+        </div>
+        <div className="works-item-button" data-works-item="button">
+          <button
+            type="button"
+            className="button w-inline-block"
+            aria-label={`${project.title} — play video`}
+            style={{ cursor: "pointer" }}
+            onClick={(e) => openPlayer(e, project)}
+          >
+            <div className="link-inner">
+              <div data-link="label" className="p1">
+                Play
+              </div>
+              <div data-link="shadow" className="p1 is-2">
+                Play
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section className="works">
       <div className="works-overlay">
@@ -62,68 +125,7 @@ export default function WorkGrid() {
               role="list"
               className="works-list w-dyn-items"
             >
-              {projects.map((project) => {
-                // Bento tile: the frame takes the source's native shape —
-                // 9:16 clips render tall, 16:9 clips render wide.
-                const landscape = projectAspect(project) === "16:9";
-                return (
-                <div
-                  key={project.slug}
-                  data-haptic="medium"
-                  data-works-item="wrap"
-                  data-tab-content-reval="item"
-                  role="listitem"
-                  className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"}`}
-                  data-aspect={landscape ? "16:9" : "9:16"}
-                >
-                  <a
-                    className="works-item-link-overlay w-inline-block"
-                    href="#work"
-                    aria-label={`${project.title} — play video`}
-                    onClick={(e) => openPlayer(e, project)}
-                  ></a>
-                  <div className="works-item-image-wrap">
-                    <div
-                      className="works-item-image-inner"
-                      style={{
-                        aspectRatio: landscape ? "16 / 9" : "9 / 16",
-                      }}
-                    >
-                      {/* Still frame only — the video runs in the lightbox
-                          once opened (tap anywhere on the tile). */}
-                      <img
-                        alt={project.title}
-                        loading="lazy"
-                        decoding="async"
-                        src={project.coverImage}
-                        className="img is-cover-works"
-                      />
-                    </div>
-                  </div>
-                  <div className="works-item-meta">
-                    <div className="p1">{project.title}</div>
-                  </div>
-                  <div className="works-item-button" data-works-item="button">
-                    <button
-                      type="button"
-                      className="button w-inline-block"
-                      aria-label={`${project.title} — play video`}
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => openPlayer(e, project)}
-                    >
-                      <div className="link-inner">
-                        <div data-link="label" className="p1">
-                          Play
-                        </div>
-                        <div data-link="shadow" className="p1 is-2">
-                          Play
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
+              {projects.map((project) => renderTile(project))}
             </div>
           </div>
         </div>

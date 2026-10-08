@@ -236,7 +236,7 @@ export const projects: Project[] = [
   },
   {
     slug: "alwin-tutorial",
-    title: "Alwin_Tutorial",
+    title: "Alwin Tutorial",
     type: "Shot",
     year: "'26",
     coverImage: "/images/posters/alwin-tutorial.jpg",
@@ -588,7 +588,7 @@ export const projects: Project[] = [
   },
   {
     slug: "hangman-vlogg",
-    title: "Hangman Vlogg",
+    title: "Hangman Vlog",
     type: "Shot",
     year: "'26",
     coverImage: "/images/posters/hangman-vlogg.jpg",
@@ -621,7 +621,7 @@ export const projects: Project[] = [
   },
   {
     slug: "ofiice-series",
-    title: "Ofiice Series",
+    title: "Office Series",
     type: "Shot",
     year: "'26",
     coverImage: "/images/posters/ofiice-series.jpg",
@@ -895,6 +895,55 @@ export const projects: Project[] = [
     hideFromHome: true,
   },
 ];
+
+/**
+ * Pinned videos — these always lead the listing (work grid, and the home
+ * globe/carousel for entries visible there), in this exact order.
+ * Everything else keeps its file order below. Add a slug here to pin a
+ * video to the top. Array.prototype.sort is stable, so unpinned entries
+ * never change their relative order.
+ */
+export const PINNED_SLUGS: string[] = [
+  "hangman-vlogg", // Hangman Vlog
+  "ofiice-series", // Office Series
+  "alwin-tutorial", // Alwin Tutorial
+  "classmate-notebook-sees-it-all", // Classmate Notebook sees it all
+  "trailer-recut", // Design pattern with API Workshop
+  "marketing-promo-edit", // Classmate Scribble with Me
+  "travel-vlog-edit", // Gyan Singh Rajbanshi Testimonial
+  "rishika-adhikari-testimonial", // Rishika Adhikari Testimonial
+  "gomendra-hackathon", // Gomendra Hackathon
+  "product-design-workshop", // Product Design Workshop
+  "short-film-cut", // Digital Marketing Workshop
+  "color-grading-showcase", // Tech Team Intro
+  "social-media-campaign", // Draw With Me (part1)
+  "product-promo-video", // Draw With Me (part2)
+];
+
+// Deterministic PRNG (mulberry32) — the shuffle must be identical on the
+// server prerender and the client hydration, so Math.random() is banned
+// here: a fresh random order per render would hydration-mismatch.
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const pinRank = new Map(PINNED_SLUGS.map((slug, i) => [slug, i]));
+const shuffleRand = mulberry32(20261008);
+const shuffleKey = new Map(projects.map((p) => [p.slug, shuffleRand()]));
+projects.sort((a, b) => {
+  // Pinned videos first in pin order; everything else shuffled below.
+  const pa = pinRank.get(a.slug) ?? PINNED_SLUGS.length;
+  const pb = pinRank.get(b.slug) ?? PINNED_SLUGS.length;
+  if (pa !== pb) return pa - pb;
+  return (shuffleKey.get(a.slug) ?? 0) - (shuffleKey.get(b.slug) ?? 0);
+});
 
 /**
  * Native source format per project, verified against poster dimensions

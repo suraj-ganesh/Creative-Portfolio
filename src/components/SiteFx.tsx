@@ -357,6 +357,32 @@ export default function SiteFx() {
     // composite pass on every frame — extremely expensive on phone GPUs.
     // On mobile, do a simple opacity fade (GPU-cheap) instead.
     if (isMobile()) {
+      // Safety net: if the fade-in tween is ever killed before completing,
+      // the page would sit invisible with no recovery. Force recovery.
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        lenisStart();
+      };
+      const safety = window.setTimeout(() => {
+        if (!root.isConnected) {
+          finish();
+          return;
+        }
+        try {
+          gsap.killTweensOf(root);
+          gsap.set(root, { clearProps: "filter,opacity,visibility" });
+        } catch {
+          /* ignore */
+        }
+        try {
+          ScrollTrigger.refresh();
+        } catch {
+          /* ignore */
+        }
+        finish();
+      }, 2500);
       gsap.fromTo(
         root,
         { autoAlpha: 0 },
@@ -367,8 +393,9 @@ export default function SiteFx() {
           overwrite: "auto",
           clearProps: "opacity,visibility",
           onComplete: () => {
+            window.clearTimeout(safety);
             try { ScrollTrigger.refresh(); } catch { /* ignore */ }
-            lenisStart();
+            finish();
           },
         },
       );

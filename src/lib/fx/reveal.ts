@@ -572,6 +572,94 @@ export function revealNow(scope: ParentNode = document): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Mobile fade-ins (opacity-only, GPU-cheap)                             */
+/* ------------------------------------------------------------------ */
+
+const MOBILE_FADE_SEL = [
+  "[data-reveal]",
+  "[data-works-item]",
+  "[data-award]",
+  "[data-contact-reveal]",
+  "[data-contact-pills]",
+  "[data-scrub-reveal]",
+  "[data-sticky-meta]",
+  "[data-parallax]",
+  "[data-featured]",
+].join(",");
+
+/** Mobile component fade-ins: opacity-only IntersectionObserver reveals
+ *  with a timed safety net, so content can never strand hidden. Runs
+ *  AFTER revealNow (everything starts visible) — hooks restage hidden
+ *  synchronously here, before the next paint, then fade in on scroll.
+ *  Transform-driven mobile modules (the home carousel scrub) are
+ *  orthogonal — opacity never fights their transforms. */
+function wireMobileFadeIns(scope: ParentNode): void {
+  const els = qa<HTMLElement>(MOBILE_FADE_SEL, scope).filter(
+    (el) => el.isConnected,
+  );
+  if (!els.length) return;
+  let dead = false;
+  // Hide instantly (no transition yet — no fade-out flash)...
+  els.forEach((el) => {
+    el.style.opacity = "0";
+  });
+  const show = (el: HTMLElement): void => {
+    if (el.getAttribute("data-m-fade") === "1") return;
+    el.setAttribute("data-m-fade", "1");
+    el.style.opacity = "1";
+  };
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          show(entry.target as HTMLElement);
+          io.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0 },
+  );
+  // ...then enable the transition on the next frame and observe.
+  const raf = requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (dead) return;
+      els.forEach((el) => {
+        el.style.transition = "opacity 0.6s ease-out";
+      });
+      els.forEach((el) => io.observe(el));
+    }),
+  );
+  // Safety: never strand content hidden (backgrounded tab, IO quirks).
+  const t = window.setTimeout(() => {
+    els.forEach(show);
+    try {
+      io.disconnect();
+    } catch {
+      /* noop */
+    }
+  }, 4000);
+  trackCleanup(() => {
+    dead = true;
+    cancelAnimationFrame(raf);
+    window.clearTimeout(t);
+    try {
+      io.disconnect();
+    } catch {
+      /* noop */
+    }
+    els.forEach((el) => {
+      try {
+        el.style.transition = "";
+        el.style.opacity = "";
+        el.removeAttribute("data-m-fade");
+      } catch {
+        /* detached — nothing to restore */
+      }
+    });
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Serial staging: any reveal hook may carry data-reveal-delay="0.65" to  */
 /* join a choreographed entrance cascade instead of firing with the pack. */
 /* ------------------------------------------------------------------ */
@@ -1537,19 +1625,76 @@ export function initReveals(scope: ParentNode = document): Cleanup {
     return () => {};
   }
 
-  // Mobile fast-path: creating dozens of ScrollTriggers + SplitText DOM
-  // mutations (splitting every heading into line-spans) + per-scroll blur
-  // animations causes layout thrash and frame drops on low-end phones.
-  // Reveal everything instantly — clean, zero-jank scroll on mobile.
-  if (isMobile()) {
-    revealNow(scope);
-    return () => {};
-  }
-
   const knownTriggers = new Set(liveTriggers);
   const knownTweens = new Set(liveTweens);
   const knownCleanups = new Set(liveCleanups);
   const knownSplits = new Set(liveSplits);
+
+  // Collect everything wired after the snapshots above so teardown kills
+  // exactly this page's triggers/tweens/listeners/splits. Shared by the
+  // mobile and desktop paths below.
+  const collectCleanup = (): Cleanup => {
+    const myTriggers = [...liveTriggers].filter((s) => !knownTriggers.has(s));
+    const myTweens = [...liveTweens].filter((t) => !knownTweens.has(t));
+    const myCleanups = [...liveCleanups].filter((c) => !knownCleanups.has(c));
+    const mySplits = [...liveSplits].filter((s) => !knownSplits.has(s));
+    return () => {
+      myTriggers.forEach((st) => {
+        try {
+          st.kill();
+        } catch {
+          /* noop */
+        }
+        liveTriggers.delete(st);
+      });
+      myTweens.forEach((tw) => {
+        try {
+          tw.kill();
+        } catch {
+          /* noop */
+        }
+        liveTweens.delete(tw);
+      });
+      myCleanups.forEach((fn) => {
+        try {
+          fn();
+        } catch {
+          /* noop */
+        }
+        liveCleanups.delete(fn);
+      });
+      mySplits.forEach((sp) => {
+        try {
+          sp.revert();
+        } catch {
+          /* noop */
+        }
+        liveSplits.delete(sp);
+      });
+      window.removeEventListener("load", onWindowLoadRefresh);
+    };
+  };
+
+  // Mobile fast-path: creating dozens of ScrollTriggers + SplitText DOM
+  // mutations (splitting every heading into line-spans) + per-scroll blur
+  // animations causes layout thrash and frame drops on low-end phones.
+  // Reveal everything instantly — clean, zero-jank scroll on mobile.
+  // Exception: the home "Work 24-26" strip is a scroll-driven horizontal
+  // carousel on phones (sticky pin + xPercent scrub, transform-only so it
+  // stays GPU-cheap). It still needs its ScrollTriggers — without them the
+  // strip sits static instead of sliding right-to-left on scroll.
+  if (isMobile()) {
+    revealNow(scope);
+    wireFeaturedHeightMobile(scope, []);
+    wireMobileFadeIns(scope);
+    try {
+      ScrollTrigger.refresh();
+    } catch {
+      /* noop */
+    }
+    window.addEventListener("load", onWindowLoadRefresh);
+    return collectCleanup();
+  }
 
   wireTextReveals(scope, []);
   wireLogoGoo(scope, []);
@@ -1575,11 +1720,6 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   wireParallax(scope, []);
   wireStickyMeta(scope, []);
 
-  const myTriggers = [...liveTriggers].filter((s) => !knownTriggers.has(s));
-  const myTweens = [...liveTweens].filter((t) => !knownTweens.has(t));
-  const myCleanups = [...liveCleanups].filter((c) => !knownCleanups.has(c));
-  const mySplits = [...liveSplits].filter((s) => !knownSplits.has(s));
-
   const refresh = (): void => {
     try {
       ScrollTrigger.refresh();
@@ -1599,39 +1739,5 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   // Initial check so above-the-fold one-shots play immediately.
   refresh();
 
-  return () => {
-    myTriggers.forEach((st) => {
-      try {
-        st.kill();
-      } catch {
-        /* noop */
-      }
-      liveTriggers.delete(st);
-    });
-    myTweens.forEach((tw) => {
-      try {
-        tw.kill();
-      } catch {
-        /* noop */
-      }
-      liveTweens.delete(tw);
-    });
-    myCleanups.forEach((fn) => {
-      try {
-        fn();
-      } catch {
-        /* noop */
-      }
-      liveCleanups.delete(fn);
-    });
-    mySplits.forEach((sp) => {
-      try {
-        sp.revert();
-      } catch {
-        /* noop */
-      }
-      liveSplits.delete(sp);
-    });
-    window.removeEventListener("load", onWindowLoadRefresh);
-  };
+  return collectCleanup();
 }
