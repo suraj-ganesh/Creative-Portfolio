@@ -1593,3 +1593,65 @@ body:has(main[data-page="error-404"]) .mc-lever {
     transform: scale(1.125);
   }
 }
+
+/** -------------------------------------------------
+ * MOBILE PERFORMANCE LAYER
+ * Keeps the site fast on phones:
+ * - No will-change on JS-animated elements (avoids layer explosion)
+ * - No backdrop-filter / blur effects (GPU-expensive on mobile)
+ * - Simple CSS fade-in for instant-revealed elements
+ * - Reduced shadow complexity
+ * ------------------------------------------------- */
+@media (max-width: 991px), (pointer: coarse) {
+  /* Remove GPU layer promotions that are only needed for desktop animations. */
+  [data-reveal],
+  [data-orbit-tiles-item],
+  [data-scrub-reveal],
+  .reveal-block,
+  .fluid-canvas {
+    will-change: auto !important;
+  }
+
+  /* The fluid WebGL canvas is desktop-only — hide it and reclaim space on
+     mobile (it's inside reveal-block-wrap which still lays out). */
+  .fluid-canvas {
+    display: none !important;
+  }
+
+  /* Pills in natural CSS flow on mobile (JS physics engine is skipped). */
+  [data-contact-pills] {
+    position: relative !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  [data-contact-pills] .cg-pill {
+    position: relative !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+  }
+
+  /* Disable heavy box-shadow stacks on mobile to reduce paint cost. */
+  .orbit-tiles__item,
+  .demo-card {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  /* Ensure GSAP instant-reveals (revealNow / revealHeroInstant) are
+     actually visible — guard against any lingering inline styles. */
+  [data-intro-step],
+  [data-reveal] {
+    visibility: visible !important;
+  }
+
+  /* Subtle CSS-only entrance for mobile: a single lightweight opacity fade
+     on the page root when it enters view. No JS, no filter, no transform. */
+  @keyframes mobile-page-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  main {
+    animation: mobile-page-enter 0.3s ease-out both;
+  }
+}

@@ -5,6 +5,7 @@ import {
   DUR,
   prefersReduced,
   qa,
+  isMobile,
   type Cleanup,
 } from "@/lib/fx/core";
 
@@ -1432,6 +1433,15 @@ function wireStickyMeta(scope: ParentNode, local: ScrollTrigger[]): void {
  *  Refreshes after fonts/images settle (fonts.ready + window load). */
 export function initReveals(scope: ParentNode = document): Cleanup {
   if (prefersReduced()) {
+    revealNow(scope);
+    return () => {};
+  }
+
+  // Mobile fast-path: creating dozens of ScrollTriggers + SplitText DOM
+  // mutations (splitting every heading into line-spans) + per-scroll blur
+  // animations causes layout thrash and frame drops on low-end phones.
+  // Reveal everything instantly — clean, zero-jank scroll on mobile.
+  if (isMobile()) {
     revealNow(scope);
     return () => {};
   }

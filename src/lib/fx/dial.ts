@@ -9,6 +9,7 @@ import {
   qa,
   type Cleanup,
   noopCleanup,
+  isMobile,
 } from "@/lib/fx/core";
 import { requestThemeMode, type ThemeMode } from "@/lib/theme";
 
@@ -57,6 +58,10 @@ export function initContactDial(scope: ParentNode = document): Cleanup {
       ? (scope as HTMLElement)
       : q<HTMLElement>('[data-contact-dial="wrap"]', scope);
   if (!wrap) return noopCleanup;
+
+  // Mobile fast-path: dial hover/drag is a desktop interaction; skip
+  // Draggable + InertiaPlugin setup entirely on touch devices.
+  if (isMobile()) return noopCleanup;
 
   const overlay =
     q<HTMLElement>('[data-contact-dial="overlay"]', wrap) ??

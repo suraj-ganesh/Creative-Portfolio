@@ -5,6 +5,7 @@ import {
   qa,
   type Cleanup,
   noopCleanup,
+  isMobile,
 } from "@/lib/fx/core";
 import { CustomEase } from "gsap/CustomEase";
 
@@ -134,6 +135,20 @@ function initRoot(root: HTMLElement): Cleanup {
   };
 
   if (prefersReduced()) {
+    layout();
+    let dead = false;
+    return () => {
+      if (!dead) {
+        dead = true;
+        clearAll();
+      }
+    };
+  }
+
+  // Mobile fast-path: skip the continuous advance()/spin loop entirely.
+  // Tiles are laid out in their initial positions and stay static —
+  // they remain tappable and visible without burning a rAF loop.
+  if (isMobile()) {
     layout();
     let dead = false;
     return () => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus } from "@/lib/fx/core";
+import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isMobile } from "@/lib/fx/core";
 import {
   initLenis,
   lenisStop,
@@ -270,6 +270,27 @@ export default function SiteFx() {
       lenisStart();
       return;
     }
+    // Mobile fast-path: blur on the whole <main> forces a full-page GPU
+    // composite pass on every frame — extremely expensive on phone GPUs.
+    // On mobile, do a simple opacity fade (GPU-cheap) instead.
+    if (isMobile()) {
+      gsap.fromTo(
+        root,
+        { autoAlpha: 0 },
+        {
+          autoAlpha: 1,
+          duration: DUR.S,
+          ease: "power2.out",
+          overwrite: "auto",
+          clearProps: "opacity,visibility",
+          onComplete: () => {
+            try { ScrollTrigger.refresh(); } catch { /* ignore */ }
+            lenisStart();
+          },
+        },
+      );
+      return;
+    }
     // Safety net: if the fade-in tween is ever killed before completing,
     // the page would sit invisible with scroll locked. Force recovery.
     let done = false;
@@ -444,6 +465,12 @@ export default function SiteFx() {
       const root = pageRoot();
       const go = () => router.push(pendingRef.current ?? url.pathname);
       if (!root || prefersReduced()) {
+        go();
+        return;
+      }
+      // Mobile fast-path: skip the leave blur — a full-page blur filter
+      // causes massive GPU overdraw on phone hardware. Just navigate.
+      if (isMobile()) {
         go();
         return;
       }

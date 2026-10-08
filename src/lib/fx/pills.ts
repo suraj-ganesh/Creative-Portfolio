@@ -1,4 +1,4 @@
-import { prefersReduced, qa, type Cleanup, noopCleanup } from "@/lib/fx/core";
+import { prefersReduced, qa, type Cleanup, noopCleanup, isMobile } from "@/lib/fx/core";
 
 /**
  * Contact-pill physics ([data-contact-pills] > .cg-pill), cloned from the
@@ -102,6 +102,10 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     f.querySelectorAll<HTMLElement>(":scope > .cg-pill").forEach((p) => pills.push(p));
   });
   if (!pills.length) return noopCleanup;
+
+  // Mobile fast-path: the per-frame physics rAF loop + collision detection
+  // is expensive on low-end phones. Pills stay in natural CSS flow instead.
+  if (isMobile()) return noopCleanup;
   const nameEl = (
     scope instanceof Document
       ? scope.querySelector(".cg-name.is-cut")
