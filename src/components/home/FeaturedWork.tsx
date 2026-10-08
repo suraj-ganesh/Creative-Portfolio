@@ -7,9 +7,15 @@ import { mediaUrl, rawMediaUrl, MOBILE_VIDEO_TRANSFORM } from "@/lib/media";
 export default function FeaturedWork() {
   // Work-only projects (hideFromHome) never appear on the home page.
   const globeProjects = projects.filter((p) => p.coverImage && !p.hideFromHome);
-  // Globe videos only exist on desktop — on phones the globe engine never
-  // runs (and its textures would otherwise still download + stall the
-  // loader). Render the <video> nodes only after confirming desktop.
+  // The globe's <video> nodes render unconditionally (preload="none" so
+  // they never fetch until the globe engine explicitly load()s them).
+  // They MUST be present on first paint: the globe scans its database once
+  // at init, and items without a playable video are skipped permanently —
+  // gating these nodes behind a post-mount desktop check used to race the
+  // globe init on SPA navigations back home, leaving an empty sphere.
+  // Cost on phones is ~zero: the globe engine never runs there, the loader
+  // ignores preload="none" videos, and the database wrap is display:none.
+  // isDesktop below only tunes the (non-critical) img loading attribute.
   const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 992px)");
@@ -63,7 +69,7 @@ export default function FeaturedWork() {
                     role="listitem"
                     className="globe-database-item w-dyn-item"
                   >
-                    {p.videoSrc && isDesktop && (
+                    {p.videoSrc && (
                       <video
                         src={mediaUrl(p.videoSrc, {
                           transform: MOBILE_VIDEO_TRANSFORM,

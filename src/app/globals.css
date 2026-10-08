@@ -1300,7 +1300,9 @@ body {
 .works-list .works-item-image-inner img,
 .works-list .works-item-image-inner video {
   width: 100% !important;
-  height: auto !important;
+  /* Fill the aspect-ratio frame exactly (object-fit needs a definite box;
+   * height:auto left sub-pixel seams between the frame and the image). */
+  height: 100% !important;
   object-fit: cover;
   display: block;
 }

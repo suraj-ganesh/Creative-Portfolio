@@ -38,22 +38,34 @@ function isDesktopFx(): boolean {
   }
 }
 
-/** True when the page actually hosts a desktop-only FX hook. Pages without
- *  one (work, contact, 404) skip the heavy chunks entirely. */
-function needsDesktopFx(): boolean {
+/** Which desktop-only FX hooks the current page actually hosts. Pages
+ *  without one (work, contact, 404) skip the heavy chunks entirely, and
+ *  engines whose hooks are absent are never imported. */
+type DesktopFxName = "globe" | "fluid" | "canvas";
+
+function desktopHooks(): DesktopFxName[] {
+  const names: DesktopFxName[] = [];
   try {
-    return (
-      document.querySelector(
-        '[data-globe="wrap"],[data-fluid-reveal],[data-infinite-canvas]',
-      ) !== null
-    );
+    if (document.querySelector('[data-globe="wrap"]')) names.push("globe");
+    if (document.querySelector("[data-fluid-reveal]")) names.push("fluid");
+    if (document.querySelector("[data-infinite-canvas]"))
+      names.push("canvas");
   } catch {
-    return true;
+    return ["globe", "fluid", "canvas"];
   }
+  return names;
 }
 
+// Generation counter for the desktop-FX lifecycle. Teardown bumps it;
+// async loads/destroys capture it and bail out once superseded, so a
+// slow chunk can never destroy instances owned by a newer page (the old
+// document-wide destroy used to resolve after the new page's init and
+// wipe its freshly created globe/fluid).
+let fxGen = 0;
+
 async function loadDesktopFx(
-  names: Array<"globe" | "fluid" | "canvas">,
+  names: DesktopFxName[],
+  gen: number,
 ): Promise<Array<() => void>> {
   if (!isDesktopFx()) return [];
   const cleanups: Array<() => void> = [];
@@ -81,34 +93,47 @@ async function loadDesktopFx(
   } catch (err) {
     console.error("[fx] canvas failed:", err);
   }
+  if (gen !== fxGen) {
+    // Superseded while importing (route change / hero swap landed
+    // meanwhile): tear down what was just created instead of handing
+    // it to a page that no longer owns it.
+    for (const fn of cleanups) {
+      try {
+        fn();
+      } catch {
+        /* ignore */
+      }
+    }
+    return [];
+  }
   if (cleanups.length) desktopFxLoaded = true;
   return cleanups;
 }
 
 let desktopFxLoaded = false;
 
-async function destroyDesktopFx(): Promise<void> {
-  // Never import the heavy chunks just to tear them down — pages that
-  // never loaded them (mobile, hook-less pages) have nothing to destroy.
+/** Backstop for instances missed by the synchronous page cleanups
+ *  (detached hosts from commits that landed before teardown ran).
+ *  Only ever destroys DETACHED instances — connected hosts belong to
+ *  the current page's init and are never touched, so this can resolve
+ *  at any time without racing a newer init.
+ *  Never imports the heavy chunks just to prune — pages that never
+ *  loaded them (mobile, hook-less pages) have nothing to destroy. */
+async function pruneDetachedDesktopFx(gen: number): Promise<void> {
   if (!desktopFxLoaded) return;
   try {
-    const [g, f, c] = await Promise.all([
+    const [g, f] = await Promise.all([
       import("@/lib/fx/globe"),
       import("@/lib/fx/fluid"),
-      import("@/lib/fx/canvas"),
     ]);
+    if (gen !== fxGen) return;
     try {
-      g.destroyGlobe();
+      g.destroyDetachedGlobe();
     } catch {
       /* ignore */
     }
     try {
-      f.destroyFluidReveal();
-    } catch {
-      /* ignore */
-    }
-    try {
-      c.destroyInfiniteCanvas();
+      f.destroyDetachedFluid();
     } catch {
       /* ignore */
     }
@@ -221,6 +246,10 @@ export default function SiteFx() {
   }, []);
 
   const teardownPage = useCallback(() => {
+    // Bump the generation FIRST so any in-flight desktop-FX load/destroy
+    // resolves stale and stands down instead of touching the next page.
+    fxGen += 1;
+    const gen = fxGen;
     try {
       killHeroIntro();
     } catch {
@@ -235,11 +264,15 @@ export default function SiteFx() {
     }
     pageCleanups.current = [];
     killReveals();
-    // Desktop chunks may not be loaded on mobile — fire and forget.
-    void destroyDesktopFx();
+    // Backstop for detached instances missed above (fire and forget —
+    // it only destroys disconnected hosts, so it can never race init).
+    void pruneDetachedDesktopFx(gen);
   }, []);
 
   const initPage = useCallback(() => {
+    // Capture the generation: async desktop-FX loads below stand down
+    // if a teardown supersedes them before they resolve.
+    const gen = fxGen;
     updateNavIndicators();
     // Preloader hooks ([data-preloader]) remount with every page, but the
     // preloader sequence itself runs only once per session — and its base
@@ -288,17 +321,26 @@ export default function SiteFx() {
     ];
     // Heavy desktop-only engines load in a separate chunk, after the
     // lightweight FX above — phones skip this entirely (zero three.js),
-    // as do pages with no desktop-FX hooks (work, contact, 404).
-    if (isDesktopFx() && needsDesktopFx()) {
-      void loadDesktopFx(["globe", "fluid", "canvas"]).then((extra) => {
-        for (const fn of extra) pageCleanups.current.push(fn);
-        try {
-          lenisResize();
-          ScrollTrigger.refresh();
-        } catch {
-          /* ignore */
-        }
-      });
+    // as do pages with no desktop-FX hooks (work, contact, 404). Only
+    // engines whose hooks exist in the DOM are imported.
+    // NOTE: on home the full hero (fluid/orbit hooks) swaps in a beat
+    // after this runs (HeroLite first paint) — the hero:swapped handler
+    // below re-runs teardown+init onto the swapped DOM, so the fluid
+    // engine still boots there.
+    if (isDesktopFx()) {
+      const needed = desktopHooks();
+      if (needed.length) {
+        void loadDesktopFx(needed, gen).then((extra) => {
+          if (gen !== fxGen) return;
+          for (const fn of extra) pageCleanups.current.push(fn);
+          try {
+            lenisResize();
+            ScrollTrigger.refresh();
+          } catch {
+            /* ignore */
+          }
+        });
+      }
     }
     lenisResize();
     ScrollTrigger.refresh();

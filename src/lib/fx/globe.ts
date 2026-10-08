@@ -745,6 +745,63 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     pump();
   }
 
+  // Backstop: if database <video> nodes arrive after init (e.g. React
+  // commits them a beat after the globe boots on SPA navigations), adopt
+  // them instead of leaving the sphere permanently short of cards.
+  const seenVideos = new WeakSet<HTMLVideoElement>();
+  items.forEach((item) => {
+    const v = item.querySelector("video");
+    if (v) seenVideos.add(v);
+  });
+  const slugForItem = (item: HTMLElement): string => {
+    const img = item.querySelector("img");
+    const vid = item.querySelector("video");
+    return (
+      item.getAttribute("data-works-database") ||
+      img?.getAttribute("data-works-database") ||
+      vid?.getAttribute("data-works-database") ||
+      ""
+    ).trim();
+  };
+  const randomDir = (): THREE.Vector3 => {
+    const v = new THREE.Vector3();
+    do {
+      v.set(
+        Math.random() * 2 - 1,
+        (Math.random() * 2 - 1) * 0.55,
+        Math.random() * 2 - 1,
+      );
+    } while (v.lengthSq() < 0.01 || Math.abs(v.y) >= 0.55);
+    return v.normalize();
+  };
+  const adoptVideo = (vid: HTMLVideoElement) => {
+    if (seenVideos.has(vid)) return;
+    if (!vid.getAttribute("src")) return;
+    const item = vid.closest('[data-globe="img"]') as HTMLElement | null;
+    if (!item || (db && !db.contains(item))) return;
+    seenVideos.add(vid);
+    queue.push((done) =>
+      loadVideoCard(vid, randomDir(), slugForItem(item), done, false, 0),
+    );
+    pump();
+  };
+  const dbObs = db
+    ? new MutationObserver((muts) => {
+        if (tornDown) return;
+        for (const m of muts) {
+          for (const node of m.addedNodes) {
+            if (node instanceof HTMLVideoElement) adoptVideo(node);
+            else if (node instanceof Element) {
+              if (node.matches("video"))
+                adoptVideo(node as HTMLVideoElement);
+              node.querySelectorAll("video").forEach(adoptVideo);
+            }
+          }
+        }
+      })
+    : null;
+  dbObs?.observe(db as Node, { childList: true, subtree: true });
+
   // ---- observers / events ----
   const ro = new ResizeObserver(() => {
     const w = clientW();
@@ -1014,6 +1071,11 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     cardVideos.clear();
     io.disconnect();
     ro.disconnect();
+    try {
+      dbObs?.disconnect();
+    } catch {
+      /* ignore */
+    }
     queue.length = 0;
     hideInfo();
     wrapEl.style.cursor = "";
@@ -1048,6 +1110,11 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
   // Legacy parity: no globe on mobile (the mobile featured carousel
   // replaces it); initGlobeReal is desktop-only.
   if (window.matchMedia("(max-width: 991px)").matches) return () => {};
+  // Drop instances whose hosts left the document (SPA navigations commit
+  // the new page before teardown runs, so document-scoped destroys miss
+  // the detached hosts). Without this the set — and their rAF loops —
+  // grow by one globe per home visit.
+  destroyDetachedGlobe();
   // Pages with filter tabs (work) drive the globe via tab switches:
   // the globe content starts hidden, so reveal on first intersection
   // (fires when the Sphere tab shows it in the viewport). Elsewhere the
@@ -1142,4 +1209,23 @@ export function destroyGlobe(scope: ParentNode = document): void {
   qa<GlobeHost>('[data-globe="wrap"]', scope).forEach((host) => {
     host._globeDestroy?.();
   });
+}
+
+/**
+ * Destroy instances whose hosts left the document. SPA navigations commit
+ * the new page before teardown runs, so document-scoped destroys can only
+ * see the new page's hosts and always miss the detached ones. Safe to call
+ * any time: connected hosts (owned by the current page) are untouched.
+ */
+export function destroyDetachedGlobe(): void {
+  for (const host of Array.from(tracked)) {
+    if (!host.isConnected) {
+      try {
+        host._globeDestroy?.();
+      } catch {
+        /* ignore */
+      }
+      tracked.delete(host);
+    }
+  }
 }

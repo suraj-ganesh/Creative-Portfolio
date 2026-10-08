@@ -1154,28 +1154,99 @@ function wireFilterTabs(scope: ParentNode): void {
  *  revealNow before this ever runs). The "Work" heading morphs first via
  *  its own text reveal; tiles follow in batches so the grid never pops
  *  in all at once. Above-the-fold tiles play on load through the same
- *  batch path. */
+ *  batch path.
+ *
+ *  Hardening: trigger positions are measured before the tile images load,
+ *  and the masonry reflows as they arrive — stale triggers used to leave
+ *  in-view tiles hidden (empty gaps between clips) until the user
+ *  scrolled. So trigger positions are re-measured as images settle, and
+ *  an IntersectionObserver backstop reveals any tile that is actually
+ *  visible but still hidden, independent of ScrollTrigger math. Both
+ *  paths animate to the same end state (idempotent, overwrite:true). */
 function wireWorksItemRise(scope: ParentNode): void {
   const wraps = qa<HTMLElement>('[data-works-item="wrap"]', scope);
   if (!wraps.length) return;
   gsap.set(wraps, { autoAlpha: 0, y: 48 });
+  const revealed = new Set<HTMLElement>();
+  const show = (els: HTMLElement[]): void => {
+    const fresh = els.filter((e) => !revealed.has(e));
+    if (!fresh.length) return;
+    fresh.forEach((e) => revealed.add(e));
+    trackTw(
+      gsap.to(fresh, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.06,
+        overwrite: true,
+      }),
+    );
+  };
   const triggers = ScrollTrigger.batch(wraps, {
     start: "top 94%",
     once: true,
-    onEnter: (batch) => {
-      trackTw(
-        gsap.to(batch, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.06,
-          overwrite: true,
-        }),
-      );
-    },
+    onEnter: (batch) => show(batch as HTMLElement[]),
   });
   (Array.isArray(triggers) ? triggers : [triggers]).forEach(trackST);
+  const io = new IntersectionObserver(
+    (entries) => {
+      const vis = entries
+        .filter((e) => e.isIntersecting)
+        .map((e) => e.target as HTMLElement);
+      if (vis.length) show(vis);
+    },
+    { threshold: 0 },
+  );
+  wraps.forEach((w) => io.observe(w));
+  // Re-measure triggers as the masonry settles (tile images loading in,
+  // content-visibility rendering, fonts) so batch positions heal.
+  let refreshTimer = 0;
+  const scheduleRefresh = (): void => {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => {
+      try {
+        ScrollTrigger.refresh();
+      } catch {
+        /* noop */
+      }
+    }, 150);
+  };
+  const imgCleanups: Cleanup[] = [];
+  wraps.forEach((wrap) => {
+    wrap.querySelectorAll("img").forEach((img) => {
+      if (img.complete && img.naturalWidth > 0) return;
+      const onSettle = (): void => scheduleRefresh();
+      img.addEventListener("load", onSettle, { once: true });
+      img.addEventListener("error", onSettle, { once: true });
+      imgCleanups.push(() => {
+        img.removeEventListener("load", onSettle);
+        img.removeEventListener("error", onSettle);
+      });
+    });
+  });
+  const onWinLoad = (): void => scheduleRefresh();
+  window.addEventListener("load", onWinLoad);
+  const t1 = window.setTimeout(scheduleRefresh, 1200);
+  const t2 = window.setTimeout(scheduleRefresh, 3000);
+  trackCleanup(() => {
+    try {
+      io.disconnect();
+    } catch {
+      /* noop */
+    }
+    window.clearTimeout(refreshTimer);
+    window.clearTimeout(t1);
+    window.clearTimeout(t2);
+    window.removeEventListener("load", onWinLoad);
+    imgCleanups.forEach((fn) => {
+      try {
+        fn();
+      } catch {
+        /* noop */
+      }
+    });
+  });
 }
 
 function wireWorksItemHover(scope: ParentNode): void {

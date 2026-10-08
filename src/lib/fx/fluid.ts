@@ -159,6 +159,10 @@ interface RT {
 export function initFluidReveal(scope: ParentNode = document): Cleanup {
   if (typeof window === "undefined") return () => {};
   if (window.matchMedia("(max-width: 991px)").matches) return () => {};
+  // Drop instances whose hosts left the document (SPA navigations commit
+  // the new page before teardown runs, so document-scoped destroys miss
+  // the detached hosts and their rAF loops would leak one per visit).
+  destroyDetachedFluid();
   const hosts = qa<FluidHost>("[data-fluid-reveal]", scope);
   if (!hosts.length) return () => {};
   const cleanups: Cleanup[] = [];
@@ -588,4 +592,23 @@ export function destroyFluidReveal(scope: ParentNode = document): void {
   qa<FluidHost>("[data-fluid-reveal]", scope).forEach((host) => {
     host._destroyFluidReveal?.();
   });
+}
+
+/**
+ * Destroy instances whose hosts left the document. SPA navigations commit
+ * the new page before teardown runs, so document-scoped destroys can only
+ * see the new page's hosts and always miss the detached ones. Safe to call
+ * any time: connected hosts (owned by the current page) are untouched.
+ */
+export function destroyDetachedFluid(): void {
+  for (const host of Array.from(tracked)) {
+    if (!host.isConnected) {
+      try {
+        host._destroyFluidReveal?.();
+      } catch {
+        /* ignore */
+      }
+      tracked.delete(host);
+    }
+  }
 }
