@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
-import WorkHero from "@/components/work/WorkHero";
+import WorkGrid from "@/components/work/WorkGrid";
 import Footer from "@/components/Footer";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
-export const metadata: Metadata = {
-  title: "Suraj Ganesh",
-  description: "Selected video editing work, '24 – '26. Social campaigns, promos and color grading.",
-};
+// NOTE: no per-page `metadata` — see src/app/page.tsx. Head stays static
+// across SPA navigations so React never deletes/re-inserts hoistables.
 
 export default function WorkPage() {
   return (
@@ -63,7 +60,7 @@ export default function WorkPage() {
       </section>
 
       <div className="page-wrap">
-        <WorkHero />
+        <WorkGrid />
         <Footer />
         <ThemeChangeOverlay />
       </div>

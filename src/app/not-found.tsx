@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import pagesDataRaw from "@/data/pages.json";
 
 const pagesData = pagesDataRaw as Record<
@@ -6,9 +5,8 @@ const pagesData = pagesDataRaw as Record<
   { key: string; title: string; description: string; namespace: string; html: string }
 >;
 
-export const metadata: Metadata = {
-  title: "Suraj Ganesh",
-};
+// NOTE: no per-page `metadata` — see src/app/page.tsx. Head stays static
+// across SPA navigations so React never deletes/re-inserts hoistables.
 
 export default function NotFound() {
   // The static 404 markup ships the fallback totem SVG — swap it for the

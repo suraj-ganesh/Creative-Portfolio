@@ -1,12 +1,8 @@
-import type { Metadata } from "next";
 import ContactGravity from "@/components/contact/ContactGravity";
 import ThemeChangeOverlay from "@/components/ThemeChangeOverlay";
 
-export const metadata: Metadata = {
-  title: "Suraj Ganesh",
-  description:
-    "Write directly. Email surajganesh404@gmail.com for commissions and collaborations.",
-};
+// NOTE: no per-page `metadata` — see src/app/page.tsx. Head stays static
+// across SPA navigations so React never deletes/re-inserts hoistables.
 
 export default function ContactPage() {
   return (

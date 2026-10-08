@@ -72,7 +72,6 @@ export default function WorkGrid() {
                   data-haptic="medium"
                   data-works-item="wrap"
                   data-tab-content-reval="item"
-                  id="w-node-_019a10b8-2b38-475b-0c97-40a12d4b0193-3f92bac2"
                   role="listitem"
                   className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"}`}
                   data-aspect={landscape ? "16:9" : "9:16"}

@@ -19,14 +19,6 @@ const THEME_CLASS: Record<ThemeMode, string> = {
   "4": "theme-mode-4",
 };
 
-const FAVICON: Record<ThemeMode, string> = {
-  base: "/images/hero-mark-icon.png",
-  "1": "/images/hero-mark-icon.png",
-  "2": "/images/hero-mark-icon.png",
-  "3": "/images/hero-mark-icon.png",
-  "4": "/images/hero-mark-icon.png",
-};
-
 const STORAGE_KEY = "theme-mode";
 
 function isThemeMode(v: string | null): v is ThemeMode {
@@ -50,19 +42,11 @@ function applyTheme(mode: ThemeMode) {
   const root = document.documentElement;
   for (const c of Object.values(THEME_CLASS)) root.classList.remove(c);
   root.classList.add(THEME_CLASS[mode]);
-
-  const href = FAVICON[mode];
-  const current = document.querySelector('link[rel~="icon"]');
-  if (current?.getAttribute("href") !== href) {
-    document
-      .querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"]')
-      .forEach((el) => el.remove());
-    const link = document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/png";
-    link.href = href;
-    document.head.appendChild(link);
-  }
+  // NOTE: no imperative favicon juggling here on purpose. Removing or
+  // appending <link> nodes behind React's back detaches fibers React still
+  // tracks for its hoisted head elements — the next route commit then
+  // crashes deleting them (removeChild of null) and bricks SPA routing.
+  // The icon link is rendered declaratively by the root layout instead.
 }
 
 const ThemeContext = createContext<{

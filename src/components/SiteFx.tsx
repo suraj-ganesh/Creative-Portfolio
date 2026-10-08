@@ -189,8 +189,36 @@ export default function SiteFx() {
   const pendingRef = useRef<string | null>(null);
   const readyRef = useRef(false);
   const pageCleanups = useRef<(() => void)[]>([]);
+  const navTimerRef = useRef(0);
 
   pathRef.current = pathname;
+
+  // Last-resort recovery: if a route commit never settles (crashed or
+  // aborted), the per-route effect below never runs and the app would sit
+  // blurred with scroll locked and every link dead. Reset to a usable
+  // state instead — if the late commit still lands, that effect finishes
+  // the transition normally.
+  const armNavWatchdog = useCallback(() => {
+    window.clearTimeout(navTimerRef.current);
+    navTimerRef.current = window.setTimeout(() => {
+      navTimerRef.current = 0;
+      if (pendingRef.current === null) return;
+      pendingRef.current = null;
+      document.body.classList.remove("is-transitioning");
+      const root = pageRoot();
+      try {
+        if (root) gsap.set(root, { clearProps: "filter,opacity,visibility" });
+      } catch {
+        /* ignore */
+      }
+      lenisStart();
+    }, 12000);
+  }, []);
+
+  const disarmNavWatchdog = useCallback(() => {
+    window.clearTimeout(navTimerRef.current);
+    navTimerRef.current = 0;
+  }, []);
 
   const teardownPage = useCallback(() => {
     try {
@@ -357,6 +385,24 @@ export default function SiteFx() {
       readyRef.current = true;
       initPage();
       playIntroSafe();
+      // Warm the full home-hero chunk while idle (desktop only — phones
+      // never load it). Back-navigations to home then swap instantly
+      // instead of flashing the static hero mid-intro.
+      try {
+        if (isDesktopFx()) {
+          const warm = () => {
+            void import("@/components/home/Hero").catch(() => {});
+          };
+          const w = window as Window & {
+            requestIdleCallback?: (cb: () => void) => void;
+          };
+          if (typeof w.requestIdleCallback === "function")
+            w.requestIdleCallback(warm);
+          else window.setTimeout(warm, 2500);
+        }
+      } catch {
+        /* prefetch is best-effort */
+      }
       fxLog(
         `initPage done, ScrollTriggers: ${ScrollTrigger.getAll().length}, modules: ${fxStatus().modules.join(",")}`,
       );
@@ -386,6 +432,7 @@ export default function SiteFx() {
     window.addEventListener("hero:swapped", onHeroSwapped);
     return () => {
       cancelled = true;
+      disarmNavWatchdog();
       window.removeEventListener("hero:swapped", onHeroSwapped);
       for (const fn of bootCleanups) {
         try {
@@ -397,11 +444,12 @@ export default function SiteFx() {
       teardownPage();
       readyRef.current = false;
     };
-  }, [initPage, teardownPage]);
+  }, [initPage, teardownPage, disarmNavWatchdog]);
 
   // Per-route init + transition completion.
   useEffect(() => {
     if (!readyRef.current) return;
+    disarmNavWatchdog();
     const wasTransition = pendingRef.current !== null;
     pendingRef.current = null;
     // A throw anywhere below used to strand the new page (hidden reveals,
@@ -427,7 +475,7 @@ export default function SiteFx() {
     playIntroSafe();
     if (wasTransition) enter();
     else lenisStart();
-  }, [pathname, teardownPage, initPage, enter]);
+  }, [pathname, teardownPage, initPage, enter, disarmNavWatchdog]);
 
   // Intercept same-origin navigations for the leave animation.
   useEffect(() => {
@@ -458,6 +506,7 @@ export default function SiteFx() {
       if (url.pathname === pathRef.current || pendingRef.current) return;
       e.preventDefault();
       pendingRef.current = url.pathname + url.search;
+      armNavWatchdog();
 
       document.body.classList.add("is-transitioning");
       closeMenu();
@@ -471,6 +520,10 @@ export default function SiteFx() {
       // Mobile fast-path: skip the leave blur — a full-page blur filter
       // causes massive GPU overdraw on phone hardware. Just navigate.
       if (isMobile()) {
+        go();
+        return;
+      }
+      if ((window as unknown as { __noLeave?: boolean }).__noLeave) {
         go();
         return;
       }
