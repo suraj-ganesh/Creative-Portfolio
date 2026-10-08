@@ -193,14 +193,17 @@ async function start(): Promise<void> {
         resolve();
       };
 
-      // Counter + nav fly-in, then done. Home waits out the loading-cover
-      // fade (≈0.6s) so the logo morph starts on a fully revealed page.
-      gsap.delayedCall(isHome ? 0.65 : DUR.S + 0.5 * DUR.STAGGER, done);
+      // Counter + nav fly-in, then done. Home hands off just as the
+      // loading-cover fade (≈0.6s) completes, so the logo morph starts on
+      // a revealed page with no dead gap in between.
+      gsap.delayedCall(isHome ? 0.35 : DUR.S + 0.5 * DUR.STAGGER, done);
     };
     // Home already waited for window load + videos + fonts behind the
-    // loader gate: brisk count-up beat, then straight into the cascade.
+    // loader gate (which showed its own 1-100%): a brisk fill beat only,
+    // then straight into the cascade — a full second count here reads as
+    // a second loader and leaves a dead gap after the cover lifts.
     // Other pages keep the legacy load-paced run.
-    const HOME_COUNT_S = 1.0;
+    const HOME_COUNT_S = 0.45;
     let tween: gsap.core.Tween | null = null;
     if (isHome) {
       tween = gsap.to(state, {

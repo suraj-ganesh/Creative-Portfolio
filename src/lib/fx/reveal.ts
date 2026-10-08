@@ -1149,6 +1149,35 @@ function wireFilterTabs(scope: ParentNode): void {
   select(first);
 }
 
+/** Work-grid entrance: tiles rise from below with a stagger as they
+ *  scroll into view (desktop only — mobile reveals instantly via
+ *  revealNow before this ever runs). The "Work" heading morphs first via
+ *  its own text reveal; tiles follow in batches so the grid never pops
+ *  in all at once. Above-the-fold tiles play on load through the same
+ *  batch path. */
+function wireWorksItemRise(scope: ParentNode): void {
+  const wraps = qa<HTMLElement>('[data-works-item="wrap"]', scope);
+  if (!wraps.length) return;
+  gsap.set(wraps, { autoAlpha: 0, y: 48 });
+  const triggers = ScrollTrigger.batch(wraps, {
+    start: "top 94%",
+    once: true,
+    onEnter: (batch) => {
+      trackTw(
+        gsap.to(batch, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.06,
+          overwrite: true,
+        }),
+      );
+    },
+  });
+  (Array.isArray(triggers) ? triggers : [triggers]).forEach(trackST);
+}
+
 function wireWorksItemHover(scope: ParentNode): void {
   const wraps = qa<HTMLElement>('[data-works-item="wrap"]', scope);
   if (!wraps.length) return;
@@ -1466,6 +1495,7 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   wireFeaturedHeightMobile(scope, []);
   wireWorksIntroMask(scope, []);
   wireFilterTabs(scope);
+  wireWorksItemRise(scope);
   wireWorksItemHover(scope);
   wireCutList(scope);
   wireNextEntity(scope, 1);

@@ -14,7 +14,6 @@ import {
  *   2. the vertical divider lines draw top -> bottom
  *   3. "Suraj Ganesh" rises
  *   4. the "Video Editor & Colorist" role line rises
- *   5. the remaining hero texts (Edit / Cinematic / bio / motto) cascade
  *   6. the menu flies in
  *   7. the theme lever fades in
  *
@@ -22,6 +21,12 @@ import {
  * sequential positions). Companion wiring in lib/fx/reveal.ts stages
  * [data-intro-step] elements hidden without auto triggers on home, so
  * this timeline is the only driver — nothing can appear all at once.
+ *
+ * NOTE: the lower hero texts (Edit / Cinematic / bio / motto / copyright
+ * carry plain data-reveal="text" with NO data-intro-step) are deliberately
+ * NOT part of this timeline — they morph in on scroll via the standard
+ * one-shot reveals, so scrolling down to the work section always plays
+ * fresh morphs instead of showing pre-revealed text.
  */
 
 const CLIP_ATTR: Record<string, string> = {
@@ -271,7 +276,9 @@ function playSerial(): void {
     tl.add(sub, tl.duration());
   });
 
-  // 5 — remaining hero texts cascade.
+  // 5 — reserved: the lower hero texts are scroll-driven one-shots now
+  // (no data-intro-step), so this phase is intentionally empty. Kept as a
+  // structural beat so the shared goo blur still spans name + role.
   addStaggered(
     tl,
     otherEls.map((el) => textSub(el, 0.55)),

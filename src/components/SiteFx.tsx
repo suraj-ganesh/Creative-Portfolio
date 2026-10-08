@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isMobile } from "@/lib/fx/core";
+import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isMobile, qa } from "@/lib/fx/core";
 import {
   initLenis,
   lenisStop,
@@ -241,6 +241,19 @@ export default function SiteFx() {
 
   const initPage = useCallback(() => {
     updateNavIndicators();
+    // Preloader hooks ([data-preloader]) remount with every page, but the
+    // preloader sequence itself runs only once per session — and its base
+    // CSS stages those hooks hidden. Without this, remounted hooks (hero
+    // logo cell, work header texts) stay invisible forever on revisits.
+    // Only visibility is forced here; opacity/transform staging owned by
+    // the reveal system is left untouched.
+    try {
+      qa<HTMLElement>("[data-preloader]").forEach((el) => {
+        gsap.set(el, { visibility: "visible" });
+      });
+    } catch {
+      /* reveal wiring below still applies */
+    }
     // Static work page on phones: unhide everything instantly with zero
     // ScrollTriggers or scrub timelines — the bento grid just renders, and
     // every tile stays reachable no matter what animation does.

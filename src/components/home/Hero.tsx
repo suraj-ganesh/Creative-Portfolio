@@ -263,13 +263,13 @@ export default function Hero() {
             id="w-node-_5ab48863-5061-473e-95d0-d0f92d1f9d5f-ef9a5cf3"
             className="heading-group-wrap mt-8"
           >
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="0.8" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line1}
             </h1>
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="0.9" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line2}
             </h1>
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.0" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line3}
             </h1>
           </div>
@@ -278,19 +278,17 @@ export default function Hero() {
             id="w-node-ce00d9c2-292e-44fb-6f7b-d9a01f73fd22-ef9a5cf3"
             className="heading-group-wrap mt-8 events-auto"
           >
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.1" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line4}
             </h1>
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.2" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line5.split(" ")[0]}
             </h1>
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.3" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroHeadings.line5.split(" ")[1] || "dev."}
             </h1>
             <h1
               data-reveal="text"
-              data-intro-step="5"
-              data-reveal-delay="1.4"
               className="h1 left-offset-120 mb-104"
             >
               {profile.heroHeadings.line5.split(" ")[2] || ""}
@@ -307,8 +305,6 @@ export default function Hero() {
           {/* Bio statement */}
           <div
             data-reveal="text"
-            data-intro-step="5"
-            data-reveal-delay="1.5"
             id="w-node-b3ffe939-77a9-9ffd-556a-a54954be4b55-ef9a5cf3"
             className="p1 mb-104 events-auto"
           >
@@ -318,8 +314,6 @@ export default function Hero() {
           {/* Motto / Bottom Headline */}
           <h1
             data-reveal="text"
-            data-intro-step="5"
-            data-reveal-delay="1.6"
             id="w-node-_795aae42-750b-b740-f810-4b4a40ef7352-ef9a5cf3"
             className="h1 events-auto"
           >
@@ -327,8 +321,6 @@ export default function Hero() {
           </h1>
           <h1
             data-reveal="text"
-            data-intro-step="5"
-            data-reveal-delay="1.7"
             id="w-node-_9eb95de1-11ff-94e8-fae3-7237a73fd2cf-ef9a5cf3"
             className="h1 events-auto"
           >
@@ -338,10 +330,10 @@ export default function Hero() {
             id="w-node-_795aae42-750b-b740-f810-4b4a40ef7351-ef9a5cf3"
             className="heading-group-wrap offset-16 events-auto"
           >
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.8" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroMotto.line3}
             </h1>
-            <h1 data-reveal="text" data-intro-step="5" data-reveal-delay="1.9" className="h1">
+            <h1 data-reveal="text" className="h1">
               {profile.heroMotto.line4}
             </h1>
           </div>
@@ -354,8 +346,6 @@ export default function Hero() {
           ></div>
           <div
             data-reveal="text"
-            data-intro-step="5"
-            data-reveal-delay="2.1"
             id="w-node-dcd49ee0-e90c-2ffe-cf7c-21f57ae4ce38-ef9a5cf3"
             className="p1 mt-240 events-auto"
           >
