@@ -1899,6 +1899,16 @@ body:has(main[data-page="error-404"]) .mc-lever {
   .cg-field {
     justify-content: center;
   }
+  /* Pin the giant name to the viewport bottom on phones: fixed viewport
+     height so a tall pile can never shove it below the fold half-cropped.
+     Pills are absolutely positioned (no layout footprint), so the field
+     just absorbs the leftover space. Desktop keeps its flow. */
+  .contact-gravity {
+    height: 100svh;
+  }
+  .contact-gravity .cg-field {
+    min-height: 0;
+  }
 
   /* Let tall mobile content (work grid, contact pills) size naturally
      instead of squeezing into a fixed viewport-height box. */
