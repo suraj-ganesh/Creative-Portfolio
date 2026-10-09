@@ -58,6 +58,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://cdn.prod.website-files.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        {/* Mobile LCP: hero mark is the largest above-fold paint on phones.
+            Preload is paint-only, no visual/layout change on any viewport. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero-mark.png"
+          fetchPriority="high"
+        />
         <link rel="icon" type="image/png" href="/images/hero-mark-icon.png" />
         <script
           dangerouslySetInnerHTML={{

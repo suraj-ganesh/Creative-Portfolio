@@ -593,7 +593,8 @@ html {
  * physical object, readable on any background. */
 .mc-lever {
   position: fixed;
-  top: calc(var(--_special-units---global--padding) + 3.4rem);
+  /* Breathing room below the Menu pill (was 3.4rem — crowded). */
+  top: calc(var(--_special-units---global--padding) + 4.8rem);
   right: var(--_special-units---global--padding);
   width: max(3.4rem, 40px);
   height: max(4rem, 47px);
@@ -852,9 +853,11 @@ body.is-initial-loading .count {
  * every background. */
 .cv-button {
   position: fixed;
+  /* Clear gap below the lever (was 0.75rem — crowded). Tracks the
+   * lever offset above so the stack stays evenly spaced. */
   top: calc(
-    var(--_special-units---global--padding, 1rem) + 3.4rem +
-      max(4rem, 47px) + 0.75rem
+    var(--_special-units---global--padding, 1rem) + 4.8rem +
+      max(4rem, 47px) + 1.4rem
   );
   right: var(--_special-units---global--padding, 1rem);
   z-index: 93;
@@ -1470,10 +1473,17 @@ body {
    * 1vw root scale) — give the CV button a real pixel gap below the
    * lever so both are tappable and clearly separated. */
   .cv-button {
+    /* +12px lever shift above + 24px air = 36px so the visual gap
+     * lever → CV stays a full 24px. */
     top: calc(
       var(--_special-units---global--padding, 1rem) + 3.4rem +
-        max(4rem, 47px) + 14px
+        max(4rem, 47px) + 36px
     );
+  }
+  /* rem shrinks to a few px on phones — add a pixel floor so the lever
+   * keeps clear air below the Menu pill too. */
+  .mc-lever {
+    top: calc(var(--_special-units---global--padding) + 3.4rem + 12px);
   }
 }
 
@@ -1501,7 +1511,7 @@ body {
 /* Drop the theme lever further below the nav so it clears the 404
  * heading instead of sitting against it. */
 body:has(main[data-page="error-404"]) .mc-lever {
-  top: calc(var(--_special-units---global--padding) + 9rem);
+  top: calc(var(--_special-units---global--padding) + 10.2rem);
 }
 
 /** -------------------------------------------------
@@ -1604,6 +1614,104 @@ body:has(main[data-page="error-404"]) .mc-lever {
   .hero-lite .hero-heading-wrap {
     gap: 0;
   }
+  /* MOBILE MASTHEAD (reference lockup — HeroLite only, desktop Hero
+   * untouched): logo top-left, hairline rule middle, name bottom-right,
+   * role bottom-left. Scoped to .hero-lite so nothing else can match. */
+  .hero-lite .hero-lite__toprow {
+    display: grid;
+    grid-template-columns: 1fr 1px 1.55fr;
+    column-gap: 6vw;
+    align-items: stretch;
+    width: 100%;
+  }
+  .hero-lite__left {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    min-height: 62svh;
+    min-width: 0;
+    padding-bottom: 2vw;
+  }
+  .hero-lite__left .icon-wrap.is-logo {
+    width: 20vw;
+    max-width: 120px;
+  }
+  .hero-lite__divider {
+    background: var(--_colors---content--primary, #111);
+    width: 1px;
+    min-height: 100%;
+  }
+  .hero-lite__name {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-width: 0;
+    padding-bottom: 2vw;
+  }
+  .hero-lite__name .h1 {
+    font-size: 11.5vw;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+  /* MOBILE BODY LOCKUP (reference — HeroLite only): empty gutter +
+   * continuous hairline + text, on the same column track as the masthead
+   * rule above so both lines share one x. The line runs through the
+   * "Color & Motion graphics." stack and the bio, ending at the motto. */
+  .hero-lite .hero-lite__bodywrap {
+    display: grid;
+    grid-template-columns: 1fr 1px 1.55fr;
+    column-gap: 6vw;
+    align-items: stretch;
+    width: 100%;
+  }
+  .hero-lite__bodyline {
+    background: var(--_colors---content--primary, #111);
+    width: 1px;
+    min-height: 100%;
+  }
+  .hero-lite__bodytext {
+    min-width: 0;
+  }
+  .hero-lite__subtext .h1 {
+    font-size: 11vw;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+  .hero-lite__subtext .hero-lite__sublast {
+    text-align: right;
+  }
+  .hero-lite__bio {
+    margin-top: 6vw;
+  }
+  /* MOBILE MOTTO (reference — HeroLite only): "every" left of the line's
+   * path, "cut" right of it, "tells a / story" centered full-width. */
+  .hero-lite .hero-lite__motto {
+    display: grid;
+    grid-template-columns: 1fr 1px 1.55fr;
+    column-gap: 6vw;
+    align-items: baseline;
+    width: 100%;
+    margin-top: 10vw;
+  }
+  .hero-lite__motto .h1 {
+    font-size: 11vw;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+  .hero-lite__motto-cut {
+    grid-column: 3;
+  }
+  .hero-lite__motto-center {
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+  .hero-lite .hero-lite__copy {
+    text-align: center;
+  }
   /* The mark is absolutely positioned on desktop — flow it normally. */
   .hero-lite .icon-wrap.is-logo {
     position: relative;
@@ -1615,14 +1723,13 @@ body:has(main[data-page="error-404"]) .mc-lever {
     animation: hero-lite-mark-pop 0.8s var(--ease-out) 0.1s both;
     transform-origin: 50% 50%;
   }
-  /* The generic rule hides this stage on phones (meant for the WebGL
-     hero), which also buried the static poster collage. Show it in-flow. */
-  .hero-lite .reveal-block-wrap {
-    display: block;
-    position: relative;
-    inset: auto;
-    height: auto;
-    background: transparent;
+  /* Hero backdrop collage (the four poster stills) is removed on phones
+   * per request — the mobile hero is type + mark only. The wrapper goes
+   * with it so no empty stage space is left behind. Desktop untouched:
+   * the full Hero owns its own orbit/fluid stage, not these classes. */
+  .hero-lite .reveal-block-wrap,
+  .hero-lite__collage {
+    display: none !important;
   }
 
   /* WORK PAGE: two-column masonry of video tiles. */
@@ -1672,5 +1779,33 @@ body:has(main[data-page="error-404"]) .mc-lever {
   }
   .cg-phone-card {
     padding: 2rem 1.6rem;
+  }
+}
+
+/** -------------------------------------------------
+ * MOBILE SCROLL SMOOTHNESS (phones/small tablets ONLY)
+ * Strictly max-width:991px — desktop (>991px) is untouched.
+ * Paint-only hints: no layout, order, or visibility changes.
+ * ------------------------------------------------- */
+@media (max-width: 991px) {
+  /* Mobile featured carousel: keep swipe cheap and contained.
+     The GSAP xPercent scrub still owns the transform — these only
+     hint the compositor and contain sideways overscroll. */
+  .m-featured .collection-list-2 {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .m-featured .collection-item-2 {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 420px;
+  }
+  .m-featured .collection-item-2 img {
+    transform: translateZ(0);
+  }
+  /* Hero collage tiles: skip offscreen decode until scrolled near.
+     Inline aspect-ratio reserves space, so no layout shift. */
+  .hero-lite__tile {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
   }
 }

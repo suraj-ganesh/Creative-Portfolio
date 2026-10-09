@@ -298,10 +298,22 @@ export default function SiteFx() {
         document.querySelector('main[data-page="works"]') !== null;
       if (mobile && work) {
         revealNow();
+        // Mobile-only: defer measuring past first paint (same end state,
+        // no layout thrash during commit). Desktop path below untouched.
         try {
-          ScrollTrigger.refresh();
+          requestAnimationFrame(() => {
+            try {
+              ScrollTrigger.refresh();
+            } catch {
+              /* ignore */
+            }
+          });
         } catch {
-          /* ignore */
+          try {
+            ScrollTrigger.refresh();
+          } catch {
+            /* ignore */
+          }
         }
         lenisResize();
         return;

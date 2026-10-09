@@ -47,6 +47,7 @@ export default function WorkGrid() {
               alt={project.title}
               loading="lazy"
               decoding="async"
+              sizes="(max-width: 991px) 50vw, (max-width: 1200px) 33vw, 25vw"
               src={project.coverImage}
               className="img is-cover-works"
             />

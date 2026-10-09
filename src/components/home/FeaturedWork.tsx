@@ -136,8 +136,11 @@ export default function FeaturedWork() {
                   >
                     <img
                       src={p.coverImage}
-                      loading="lazy"
+                      loading={idx < 2 ? "eager" : "lazy"}
+                      fetchPriority={idx < 2 ? "high" : "auto"}
                       decoding="async"
+                      sizes="(max-width: 991px) 78vw, 25vw"
+                      draggable={false}
                       alt={p.title}
                       className="img width-auto"
                     />

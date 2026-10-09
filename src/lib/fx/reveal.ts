@@ -1683,12 +1683,47 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   // carousel on phones (sticky pin + xPercent scrub, transform-only so it
   // stays GPU-cheap). It still needs its ScrollTriggers — without them the
   // strip sits static instead of sliding right-to-left on scroll.
+  // NOTE (mobile-only): desktop path below is untouched.
   if (isMobile()) {
     revealNow(scope);
-    wireFeaturedHeightMobile(scope, []);
-    wireMobileFadeIns(scope);
+    // Ultra-low-power phones (Save-Data / 2g-3g / <=2 CPU cores): skip the
+    // scrubbed carousel + opacity fade-ins entirely — static content, zero
+    // ScrollTriggers, zero rAF. Normal 4G phones keep the existing behavior.
+    let slow = false;
     try {
-      ScrollTrigger.refresh();
+      const nav = navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      };
+      const conn = nav.connection;
+      if (conn?.saveData) slow = true;
+      else if (conn?.effectiveType && /2g|3g|slow/i.test(conn.effectiveType))
+        slow = true;
+      else if ((navigator.hardwareConcurrency || 8) <= 2) slow = true;
+    } catch {
+      slow = false;
+    }
+    if (!slow) {
+      wireFeaturedHeightMobile(scope, []);
+      wireMobileFadeIns(scope);
+    }
+    // Deferred refresh (mobile-only): measuring trigger positions
+    // synchronously here forces layout during route commit — the top cause
+    // of hosted mobile jank. Idle/rAF defers it past first paint with the
+    // same end state.
+    try {
+      const w = window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+      };
+      const doRefresh = () => {
+        try {
+          ScrollTrigger.refresh();
+        } catch {
+          /* noop */
+        }
+      };
+      if (typeof w.requestIdleCallback === "function")
+        w.requestIdleCallback(doRefresh, { timeout: 800 });
+      else requestAnimationFrame(() => window.setTimeout(doRefresh, 120));
     } catch {
       /* noop */
     }
