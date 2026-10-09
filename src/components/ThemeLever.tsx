@@ -6,9 +6,9 @@ import { prewarmThemeLiquid, runThemeLiquid } from "@/lib/fx/theme-liquid";
 import { prefersReduced } from "@/lib/fx/core";
 
 /** Minecraft wall-lever switch: fixed below the menu, always visible.
- *  Faux-3D cobblestone mount (top/front/side faces) with an extruded
- *  wooden stick. Stick up-left = light (base), mirrored up-right = dark.
- *  A status lamp on the mount glows red while dark mode is on. */
+ *  Faux-3D cobblestone mount with a straight wooden hand throwing left of
+ *  the pivot on the X-axis: 40° ABOVE the axis = on (dark, lamp lit),
+ *  40° BELOW = off (light, lamp dark). No knob — plain straight hand. */
 export default function ThemeLever() {
   const { mode, setMode } = useTheme();
   const isDark = mode === "4";
@@ -129,9 +129,9 @@ export default function ThemeLever() {
           stroke="#161616"
           strokeWidth="2"
         />
-        {/* Dark socket the stick sits in (upper-left of the mount) */}
-        <rect x="16" y="28" width="9" height="8" fill="#1c1c1c" />
-        <rect x="17" y="29" width="7" height="6" fill="#2e2e2e" />
+        {/* Socket the hand throws in (mid mount face). */}
+        <rect x="17" y="28" width="11" height="8" fill="#1c1c1c" />
+        <rect x="18" y="29" width="9" height="6" fill="#2e2e2e" />
         {/* Status lamp (lower-right of the mount): dim socket in light
             mode, glowing red while dark mode is on. */}
         <rect x="25" y="42" width="6" height="6" fill="#141414" />
@@ -156,36 +156,33 @@ export default function ThemeLever() {
               : "none",
           }}
         />
-        {/* Extruded wooden stick, pivot at (20,32).
-            Light/off rests up-left like the sprite; dark mirrors it. */}
+        {/* Straight wooden hand resting along −x from the pivot (22,32):
+            ON = 40° above the X-axis, OFF = 40° below it, swinging on the
+            left side. Pivot bolt drawn after keeps it pinned. */}
         <g
           style={{
             transform: isDark ? "rotate(40deg)" : "rotate(-40deg)",
-            transformOrigin: "20px 32px",
+            transformOrigin: "22px 32px",
             transformBox: "view-box",
             transition: "transform 0.28s cubic-bezier(0.5, 0, 0.3, 1.25)",
           }}
         >
-          <rect x="19" y="5" width="6" height="28" fill="#33200f" />
-          <rect x="18" y="2" width="8" height="5" fill="#33200f" />
-          <rect x="17" y="4" width="6" height="28" fill="#6b4e2e" />
-          <rect x="18" y="5" width="2" height="26" fill="#97744a" />
-          <rect x="22" y="5" width="1" height="26" fill="#4a3319" />
-          <rect x="16" y="1" width="8" height="5" fill="#755631" />
-          <rect x="16" y="1" width="8" height="2" fill="#97744a" />
+          <rect x="2" y="29" width="20" height="6" fill="#6b4e2e" />
+          <rect x="2" y="29" width="20" height="2" fill="#97744a" />
+          <rect x="2" y="33" width="20" height="2" fill="#4a3319" />
           <rect
-            x="16"
-            y="1"
-            width="8"
-            height="33"
+            x="2"
+            y="29"
+            width="20"
+            height="6"
             fill="none"
             stroke="#1a1a1a"
             strokeWidth="1.5"
           />
         </g>
         {/* Pivot bolt */}
-        <rect x="18" y="30" width="4" height="4" fill="#242424" />
-        <rect x="18" y="30" width="4" height="1" fill="#c6c6c6" />
+        <rect x="20" y="30" width="4" height="4" fill="#242424" />
+        <rect x="20" y="30" width="4" height="1" fill="#c6c6c6" />
       </svg>
     </button>
   );
