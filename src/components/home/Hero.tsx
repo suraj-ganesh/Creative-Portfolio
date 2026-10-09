@@ -59,12 +59,15 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
   }, [inView]);
 
   // Pause offscreen videos, resume when scrolled back — tiles keep running
-  // while visible instead of stalling after one play.
+  // while visible instead of stalling after one play. Gated on orbit-ready
+  // so nothing decodes/plays before the stage positions it (first-load
+  // flash guard); the ready-watcher below handles the initial play.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !inView) return;
     const io = new IntersectionObserver(
       (entries) => {
+        if (!v.closest("[data-orbit-tiles-init][data-orbit-ready]")) return;
         const vis = entries[0]?.isIntersecting;
         try {
           if (vis) void v.play().catch(() => {});
@@ -79,6 +82,45 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
     return () => io.disconnect();
   }, [inView]);
 
+  // Initial play: wait until the orbit stage positions tiles, then play if
+  // visible. Pre-ready the tile shows its poster (never motion).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !inView) return;
+    let raf = 0;
+    let dead = false;
+    const tryPlay = () => {
+      if (dead) return;
+      if (v.closest("[data-orbit-tiles-init][data-orbit-ready]")) {
+        try {
+          const io = new IntersectionObserver(
+            (entries) => {
+              if (entries[0]?.isIntersecting) {
+                try {
+                  void v.play().catch(() => {});
+                } catch {
+                  /* ignore */
+                }
+              }
+              io.disconnect();
+            },
+            { threshold: 0 },
+          );
+          io.observe(v);
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      raf = requestAnimationFrame(tryPlay);
+    };
+    raf = requestAnimationFrame(tryPlay);
+    return () => {
+      dead = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [inView]);
+
   const showVideo = Boolean(card.videoSrc) && inView && (!isMobile || eager);
   return (
     <div ref={wrapRef} style={{ width: "100%", height: "100%" }}>
@@ -90,7 +132,6 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
           muted
           loop
           playsInline
-          autoPlay
           preload={isMobile ? "none" : "metadata"}
           aria-label={card.title}
           className="cover-image"
@@ -202,6 +243,12 @@ export default function Hero() {
               data-intro-step="1"
               data-reveal-delay="0.25"
               className="icon-wrap is-logo"
+              // Staged hidden until the intro wires it (blob morph) — without
+              // this the raw mark flashes for a beat on the hero swap, since
+              // the base CSS only pre-hides [data-reveal] hooks. Cleared by
+              // wireLogoGoo initial + revealHeroInstant fallback. Full Hero
+              // only; HeroLite (mobile) is untouched.
+              style={{ visibility: "hidden" }}
             >
               {markOk ? (
                 <img

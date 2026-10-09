@@ -167,13 +167,13 @@ export default function ThemeLever() {
             transition: "transform 0.28s cubic-bezier(0.5, 0, 0.3, 1.25)",
           }}
         >
-          <rect x="2" y="29" width="20" height="6" fill="#6b4e2e" />
-          <rect x="2" y="29" width="20" height="2" fill="#97744a" />
-          <rect x="2" y="33" width="20" height="2" fill="#4a3319" />
+          <rect x="1" y="29" width="21" height="6" fill="#6b4e2e" />
+          <rect x="1" y="29" width="21" height="2" fill="#97744a" />
+          <rect x="1" y="33" width="21" height="2" fill="#4a3319" />
           <rect
-            x="2"
+            x="1"
             y="29"
-            width="20"
+            width="21"
             height="6"
             fill="none"
             stroke="#1a1a1a"
