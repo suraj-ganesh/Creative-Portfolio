@@ -1634,11 +1634,28 @@ body:has(main[data-page="error-404"]) .mc-lever {
   }
 
   /* Contact pills run the JS drop physics on mobile too (same as
-      desktop). Keep touch scrolling working over the field — a touch that
-      becomes a scroll cancels the grab and the pill rejoins the sim, while
-      clean taps still open links. */
+     desktop). Keep touch scrolling working over the field — a touch that
+     becomes a scroll cancels the grab and the pill rejoins the sim, while
+     clean taps still open links. */
   [data-contact-pills] .cg-pill {
     touch-action: manipulation !important;
+  }
+  /* The Phone pill is a <button> while the rest are <a>: without this iOS
+     Safari layers native button chrome on it so it sizes differently from
+     its siblings. */
+  [data-contact-pills] button.cg-pill {
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+  /* Uniform pill size on phones (labels range from "X" to "Instagram"):
+     every pill clamps to the same width, text centered. em-based so it
+     tracks the phone type scale. Desktop keeps natural sizes. */
+  [data-contact-pills] .cg-pill-inner {
+    min-width: 9em;
+    text-align: center;
   }
 
   /* Disable heavy box-shadow stacks on mobile to reduce paint cost. */

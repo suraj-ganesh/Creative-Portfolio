@@ -49,6 +49,9 @@ interface PillBody {
 const TILTS = [-20, -7, 4, 13, 24, -14, 8, 18];
 const GRAVITY = 2600;
 const MAX_FALL = 2400;
+// Fixed physics step (1/60) split into substeps per frame (see loop).
+const STEP_DT = 1 / 60;
+const SUBSTEPS = 3;
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -178,50 +181,80 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     };
     const n = bodies.length;
     const narrow = metrics.fieldW < 640;
-    // Pass 1: measure + spread rest X across the wordmark.
-    bodies.forEach((b, i) => {
+    const GAP = 10;
+    // Pass 1: measure every pill first (widths drive the packing below).
+    bodies.forEach((b) => {
       b.w = b.el.offsetWidth || 120;
       b.h = b.el.offsetHeight || 44;
-      b.row = narrow && i % 2 === 1 ? 1 : 0;
-      const frac = n === 1 ? 0.5 : 0.06 + (0.88 * i) / (n - 1);
-      b.restX = Math.min(
-        Math.max(frac * metrics.fieldW - b.w / 2 + rand(-26, 26), 4),
-        Math.max(4, metrics.fieldW - b.w - 4),
-      );
     });
-    // Pass 2: de-overlap rest poses per row (rotated extents + gap), so
-    // settled pills never touch each other. Two sweeps converge.
+    if (narrow) {
+      // Narrow fields (phones): pack pills into uniform columns so every
+      // pill fits on screen — a single spread row can never fit 8 pills in
+      // ~360px no matter the de-overlap. Columns share the field evenly,
+      // rows stack upward from the wordmark. Desktop path below untouched.
+      const maxW = bodies.reduce((m, b) => Math.max(m, b.w), 0);
+      const cols = Math.max(
+        1,
+        Math.floor(metrics.fieldW / (maxW + GAP)),
+      );
+      const colW = metrics.fieldW / cols;
+      bodies.forEach((b, i) => {
+        const col = i % cols;
+        b.row = Math.floor(i / cols);
+        b.restX = Math.min(
+          Math.max((col + 0.5) * colW - b.w / 2 + rand(-8, 8), 4),
+          Math.max(4, metrics.fieldW - b.w - 4),
+        );
+      });
+    } else {
+      // Pass 1b (wide): spread rest X across the wordmark.
+      bodies.forEach((b, i) => {
+        b.row = 0;
+        const frac = n === 1 ? 0.5 : 0.06 + (0.88 * i) / (n - 1);
+        b.restX = Math.min(
+          Math.max(frac * metrics.fieldW - b.w / 2 + rand(-26, 26), 4),
+          Math.max(4, metrics.fieldW - b.w - 4),
+        );
+      });
+    }
+    // Pass 2 (wide only): de-overlap rest poses per row (rotated extents
+    // + gap), so settled pills never touch each other. Two sweeps converge.
+    // Skipped when narrow — columns are pre-separated by construction and
+    // the row-based sweep would destroy the packing.
     const halfExt = (b: PillBody) => {
       const t = (b.tilt * Math.PI) / 180;
       return (b.w * Math.abs(Math.cos(t)) + b.h * Math.abs(Math.sin(t))) / 2;
     };
-    const GAP = 10;
-    for (let pass = 0; pass < 2; pass++) {
-      for (let r = 0; r <= 1; r++) {
-        const group = bodies
-          .filter((b) => b.row === r)
-          .sort((p, q) => p.restX - q.restX);
-        if (!group.length) continue;
-        for (let k = 1; k < group.length; k++) {
-          const prev = group[k - 1];
-          const cur = group[k];
-          const prevC = prev.restX + prev.w / 2;
-          const minC = prevC + halfExt(prev) + halfExt(cur) + GAP;
-          const curC = cur.restX + cur.w / 2;
-          if (curC < minC) cur.restX += minC - curC;
-        }
-        const last = group[group.length - 1];
-        const overflow = last.restX + last.w / 2 + halfExt(last) - (metrics.fieldW - 4);
-        if (overflow > 0) {
-          const first = group[0];
-          const shift = Math.min(overflow, first.restX + first.w / 2 - halfExt(first) - 4);
-          if (shift > 0) group.forEach((b) => (b.restX -= shift));
+    if (!narrow) {
+      for (let pass = 0; pass < 2; pass++) {
+        for (let r = 0; r <= 1; r++) {
+          const group = bodies
+            .filter((b) => b.row === r)
+            .sort((p, q) => p.restX - q.restX);
+          if (!group.length) continue;
+          for (let k = 1; k < group.length; k++) {
+            const prev = group[k - 1];
+            const cur = group[k];
+            const prevC = prev.restX + prev.w / 2;
+            const minC = prevC + halfExt(prev) + halfExt(cur) + GAP;
+            const curC = cur.restX + cur.w / 2;
+            if (curC < minC) cur.restX += minC - curC;
+          }
+          const last = group[group.length - 1];
+          const overflow = last.restX + last.w / 2 + halfExt(last) - (metrics.fieldW - 4);
+          if (overflow > 0) {
+            const first = group[0];
+            const shift = Math.min(overflow, first.restX + first.w / 2 - halfExt(first) - 4);
+            if (shift > 0) group.forEach((b) => (b.restX -= shift));
+          }
         }
       }
     }
     // Pass 3: rest Y from the letter floors at the final centers.
     bodies.forEach((b) => {
-      const rowLift = b.row === 1 ? b.h + 14 : 0;
+      // Narrow stacks one row per grid row above the wordmark; wide keeps
+      // everything on a single row (row is always 0 there).
+      const rowLift = narrow ? b.row * (b.h + 12) : 0;
       const cx = b.restX + b.w / 2;
       b.restY = floorY(cx) - b.h - rowLift;
       if (!b.awake && !b.grabbed) {
@@ -388,6 +421,52 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     }
   };
 
+  // Positional solid-body guarantee: pushes every simulated pair out of
+  // overlap along the smallest axis (two passes for chains) so pills read
+  // as one solid unit — no mid-air pass-throughs, landing stacks, or
+  // throws resting inside the pile. Settled pills participate too (a nudge
+  // that leaves them overlap-free and stable, never drifting otherwise).
+  // Grabbed pills are user-driven and left alone until release, when the
+  // next pass resolves them.
+  const separatePairs = () => {
+    const MARGIN = 6;
+    const n = bodies.length;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < n; i++) {
+        const a = bodies[i];
+        if (a.grabbed) continue;
+        for (let j = 0; j < n; j++) {
+          if (i === j) continue;
+          const c = bodies[j];
+          if (c.grabbed) continue;
+          const ox =
+            (a.w + c.w) / 2 + MARGIN - Math.abs(a.x + a.w / 2 - (c.x + c.w / 2));
+          const oy =
+            (a.h + c.h) / 2 + MARGIN - Math.abs(a.y + a.h / 2 - (c.y + c.h / 2));
+          if (ox <= 0 || oy <= 0) continue;
+          const cStatic = !c.awake || c.settling;
+          if (ox < oy) {
+            const s = a.x + a.w / 2 < c.x + c.w / 2 ? -1 : 1;
+            if (cStatic) a.x += s * (ox + 0.5);
+            else {
+              a.x += (s * ox) / 2;
+              c.x -= (s * ox) / 2;
+            }
+          } else {
+            const s = a.y + a.h / 2 < c.y + c.h / 2 ? -1 : 1;
+            if (cStatic) a.y += s * (oy + 0.5);
+            else {
+              a.y += (s * oy) / 2;
+              c.y -= (s * oy) / 2;
+            }
+          }
+          paint(a);
+          if (!cStatic) paint(c);
+        }
+      }
+    }
+  };
+
   const loop = () => {
     if (dead) return;
     const now = performance.now();
@@ -399,10 +478,26 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
         continue;
       }
       if (b.el.style.opacity !== "1") b.el.style.opacity = "1";
-      step(b, 1 / 60);
-      if (b.awake) alive = true;
     }
-    collidePairs(now);
+    // Substepped integration: at 60fps a fast pill falls up to ~40px per
+    // frame and can tunnel straight through another pill between samples.
+    // Three substeps keep every sample under half a pill height.
+    for (let s = 0; s < SUBSTEPS; s++) {
+      for (const b of bodies) {
+        if (!b.awake || now < b.startAt) continue;
+        step(b, STEP_DT / SUBSTEPS);
+      }
+      collidePairs(now);
+    }
+    // Positional solid-body guarantee, so pills never interpenetrate —
+    // mid-air pass-throughs, landing stacks, or throws into the pile.
+    separatePairs();
+    for (const b of bodies) {
+      if (b.awake) {
+        alive = true;
+        break;
+      }
+    }
     if (alive) {
       raf = requestAnimationFrame(loop);
     } else {
