@@ -44,6 +44,8 @@ interface PillBody {
   offX: number;
   offY: number;
   row: number;
+  /** Slow frames while falling; a stranded pill naps in place. */
+  stall: number;
 }
 
 const TILTS = [-20, -7, 4, 13, 24, -14, 8, 18];
@@ -52,6 +54,14 @@ const MAX_FALL = 2400;
 // Fixed physics step (1/60) split into substeps per frame (see loop).
 const STEP_DT = 1 / 60;
 const SUBSTEPS = 3;
+
+/** Clamp a pill center so it never leaves the field sideways. Shared by the
+ *  integrator, deflection, and separation passes — containment beats
+ *  overlap resolution (a wall-pinned touch reads as contact, an escape
+ *  reads as broken). Desktop fields are wide enough that this no-ops. */
+function clampPillX(fieldW: number, b: PillBody, v: number): number {
+  return Math.min(Math.max(v, -b.w * 0.6), fieldW - b.w * 0.4);
+}
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -141,6 +151,7 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     offX: 0,
     offY: 0,
     row: 0,
+    stall: 0,
   }));
 
   let raf = 0;
@@ -272,9 +283,14 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
 
   const spawn = (b: PillBody, i: number, t0: number) => {
     const vh = window.innerHeight || 800;
+    // Narrow fields pack pills into columns: a ±200px scatter would rain
+    // every pill into random columns where spots are already taken, leaving
+    // riders hovering on occupied piles forever. Spawn near the packed slot
+    // instead. Wide fields keep the theatrical scatter (PC unchanged).
+    const scatter = metrics.fieldW < 640 ? 20 : 200;
     // Spawned fully on-screen horizontally; only the fall starts above.
     b.x = Math.min(
-      Math.max(b.restX + rand(-200, 200), 0),
+      Math.max(b.restX + rand(-scatter, scatter), 0),
       Math.max(0, metrics.fieldW - b.w),
     );
     b.y = b.restY - (vh * rand(0.75, 1.05) + i * 40);
@@ -365,7 +381,7 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
       axis: "x" | "y",
     ) => {
       if (cStatic) {
-        if (axis === "x") a.x -= s * (overlap + 0.5);
+        if (axis === "x") a.x = clampPillX(metrics.fieldW, a, a.x - s * (overlap + 0.5));
         else a.y -= s * (overlap + 0.5);
         const rv = (axis === "x" ? a.vx : a.vy) * s;
         if (rv > 0) {
@@ -375,8 +391,8 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
       } else {
         const push = overlap / 2 + 0.25;
         if (axis === "x") {
-          a.x -= s * push;
-          c.x += s * push;
+          a.x = clampPillX(metrics.fieldW, a, a.x - s * push);
+          c.x = clampPillX(metrics.fieldW, c, c.x + s * push);
         } else {
           a.y -= s * push;
           c.y += s * push;
@@ -415,6 +431,9 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
         if (ox < oy) {
           deflect(a, c, a.x + a.w / 2 < c.x + c.w / 2 ? 1 : -1, ox, cStatic, "x");
         } else {
+          // Same polarity as the x-branch (+1 when a is on the min side):
+          // the old -1 here drove falling pills INTO the pill below instead
+          // of bouncing them off, the root cause of deep overlaps/riders.
           deflect(a, c, a.y + a.h / 2 < c.y + c.h / 2 ? 1 : -1, oy, cStatic, "y");
         }
       }
@@ -427,18 +446,23 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
   // throws resting inside the pile. Settled pills participate too (a nudge
   // that leaves them overlap-free and stable, never drifting otherwise).
   // Grabbed pills are user-driven and left alone until release, when the
-  // next pass resolves them.
-  const separatePairs = () => {
+  // next pass resolves them. Not-yet-spawned pills are skipped entirely
+  // (they wait invisible above the field — treating them as solid shoves
+  // visible fallers), and every push is clamped to the side walls so the
+  // solver can never squeeze a pill off screen.
+  const separatePairs = (now: number) => {
     const MARGIN = 6;
+    const clampX = (b: PillBody, v: number): number =>
+      clampPillX(metrics.fieldW, b, v);
     const n = bodies.length;
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < n; i++) {
         const a = bodies[i];
-        if (a.grabbed) continue;
+        if (a.grabbed || now < a.startAt) continue;
         for (let j = 0; j < n; j++) {
           if (i === j) continue;
           const c = bodies[j];
-          if (c.grabbed) continue;
+          if (c.grabbed || now < c.startAt) continue;
           const ox =
             (a.w + c.w) / 2 + MARGIN - Math.abs(a.x + a.w / 2 - (c.x + c.w / 2));
           const oy =
@@ -447,10 +471,10 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
           const cStatic = !c.awake || c.settling;
           if (ox < oy) {
             const s = a.x + a.w / 2 < c.x + c.w / 2 ? -1 : 1;
-            if (cStatic) a.x += s * (ox + 0.5);
+            if (cStatic) a.x = clampX(a, a.x + s * (ox + 0.5));
             else {
-              a.x += (s * ox) / 2;
-              c.x -= (s * ox) / 2;
+              a.x = clampX(a, a.x + (s * ox) / 2);
+              c.x = clampX(c, c.x - (s * ox) / 2);
             }
           } else {
             const s = a.y + a.h / 2 < c.y + c.h / 2 ? -1 : 1;
@@ -484,14 +508,39 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     // Three substeps keep every sample under half a pill height.
     for (let s = 0; s < SUBSTEPS; s++) {
       for (const b of bodies) {
-        if (!b.awake || now < b.startAt) continue;
+        if (!b.awake || b.grabbed || now < b.startAt) continue;
         step(b, STEP_DT / SUBSTEPS);
       }
       collidePairs(now);
     }
     // Positional solid-body guarantee, so pills never interpenetrate —
     // mid-air pass-throughs, landing stacks, or throws into the pile.
-    separatePairs();
+    separatePairs(now);
+    // Stall watchdog: a pill held up by the pile (never touching its own
+    // floor, so bounce-count settling can't trigger) would hover and burn
+    // rAF forever. A slow pill naps exactly where it hangs — separation
+    // already holds it overlap-free and rest is snapped to current, so
+    // there is no pop. Healthy falls are far too fast to trip this; the
+    // absolute 7s backstop catches slow bouncers that keep resetting the
+    // consecutive counter.
+    for (const b of bodies) {
+      if (!b.awake || b.grabbed || b.settling || now < b.startAt) {
+        if (!b.awake) b.stall = 0;
+        continue;
+      }
+      const slow = Math.hypot(b.vx, b.vy) < 150;
+      b.stall = slow ? b.stall + 1 : 0;
+      if (b.stall > 90 || (slow && now - b.startAt > 7000)) {
+        b.vx = 0;
+        b.vy = 0;
+        b.va = 0;
+        b.angle = b.tilt;
+        b.restX = b.x;
+        b.restY = b.y;
+        b.settling = true;
+        b.stall = 0;
+      }
+    }
     for (const b of bodies) {
       if (b.awake) {
         alive = true;
