@@ -1247,9 +1247,12 @@ body.is-lightbox-open .nav,
 body.is-lightbox-open .mc-lever,
 body.is-lightbox-open .cv-button,
 body.is-lightbox-open .scrollbar-wrap {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+  /* !important: the lever/nav carry data-reveal hooks that mobile rules
+   * force visibility:visible !important — without this the lever ghosts
+   * through the player on touch devices. */
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /** -------------------------------------------------
