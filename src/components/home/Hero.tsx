@@ -175,12 +175,14 @@ export default function Hero() {
     if (!activeCard) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.classList.add("is-lightbox-open");
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setActiveCard(null);
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prevOverflow;
+      document.body.classList.remove("is-lightbox-open");
       window.removeEventListener("keydown", onKey);
     };
   }, [activeCard]);

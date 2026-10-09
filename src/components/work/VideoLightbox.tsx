@@ -40,6 +40,9 @@ export default function VideoLightbox({
   useEffect(() => {
     lenisStop();
     document.body.style.overflow = "hidden";
+    // Fade the fixed chrome (Menu, lever, CV, scrollbar) behind the
+    // 88%-opaque backdrop — otherwise it ghosts through the player.
+    document.body.classList.add("is-lightbox-open");
     // Free decoders: pause the bento tiles behind the player.
     const tiles = Array.from(
       document.querySelectorAll<HTMLVideoElement>(".works-list video"),
@@ -58,6 +61,7 @@ export default function VideoLightbox({
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.body.classList.remove("is-lightbox-open");
       lenisStart();
       // Resume tiles visible behind the player on close.
       document

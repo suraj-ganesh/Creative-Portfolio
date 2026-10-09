@@ -60,6 +60,12 @@ function initRoot(root: HTMLElement): Cleanup {
   const count = items.length;
   if (count < 2) {
     // Legacy bails here without laying out; restore the collection override.
+    // Nothing to position, so release the CSS staging immediately.
+    try {
+      root.dataset.orbitReady = "1";
+    } catch {
+      /* dataset unavailable — CSS fallback reveals in 4s */
+    }
     return () => {
       if (collection) gsap.set(collection, { clearProps: "display" });
     };
@@ -132,10 +138,26 @@ function initRoot(root: HTMLElement): Cleanup {
     gsap.set(items, { clearProps: "all" });
     if (list) gsap.set(list, { clearProps: "all" });
     if (collection) gsap.set(collection, { clearProps: "all" });
+    // Re-arm the CSS staging so a remount never flashes unpositioned.
+    try {
+      delete root.dataset.orbitReady;
+    } catch {
+      /* ignore */
+    }
+  };
+
+  /** Release the CSS pre-layout staging once tiles hold positions. */
+  const markReady = () => {
+    try {
+      root.dataset.orbitReady = "1";
+    } catch {
+      /* dataset unavailable — CSS fallback reveals in 4s */
+    }
   };
 
   if (prefersReduced()) {
     layout();
+    markReady();
     let dead = false;
     return () => {
       if (!dead) {
@@ -150,6 +172,7 @@ function initRoot(root: HTMLElement): Cleanup {
   // they remain tappable and visible without burning a rAF loop.
   if (isMobile()) {
     layout();
+    markReady();
     let dead = false;
     return () => {
       if (!dead) {
@@ -226,6 +249,7 @@ function initRoot(root: HTMLElement): Cleanup {
   };
 
   layout();
+  markReady();
   // Legacy never tears this down; the native port tracks it for cleanup.
   const trigger = ScrollTrigger.create({
     trigger: root,

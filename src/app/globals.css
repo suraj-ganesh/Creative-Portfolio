@@ -593,8 +593,10 @@ html {
  * physical object, readable on any background. */
 .mc-lever {
   position: fixed;
-  /* Breathing room below the Menu pill (was 3.4rem — crowded). */
-  top: calc(var(--_special-units---global--padding) + 4.8rem);
+  /* Equal chrome rhythm: the Menu pill is ~1.6rem tall (p1 + u-4 padding),
+   * so padding + 1.6rem + 2rem gap puts the SAME 2rem air below Menu as
+   * the CV button keeps below the lever. */
+  top: calc(var(--_special-units---global--padding) + 3.6rem);
   right: var(--_special-units---global--padding);
   width: max(3.4rem, 40px);
   height: max(4rem, 47px);
@@ -853,11 +855,11 @@ body.is-initial-loading .count {
  * every background. */
 .cv-button {
   position: fixed;
-  /* Clear gap below the lever (was 0.75rem — crowded). Tracks the
-   * lever offset above so the stack stays evenly spaced. */
+  /* Same 2rem air below the lever as the lever keeps below Menu —
+   * tracks the lever offset above so the stack stays evenly spaced. */
   top: calc(
-    var(--_special-units---global--padding, 1rem) + 4.8rem +
-      max(4rem, 47px) + 1.4rem
+    var(--_special-units---global--padding, 1rem) + 3.6rem +
+      max(4rem, 47px) + 2rem
   );
   right: var(--_special-units---global--padding, 1rem);
   z-index: 93;
@@ -1206,6 +1208,51 @@ body.is-initial-loading .count {
 }
 
 /** -------------------------------------------------
+ * ORBIT STAGING — no first-load video pile flash
+ * ------------------------------------------------- */
+/* Every orbit tile shares grid-area:1/1, so before JS layout() runs they
+ * all pile at the stage center with videos already autoplaying — a raw
+ * stack flash on first load and on the HeroLite→Hero swap. Keep the list
+ * hidden until initRoot positions it (data-orbit-ready). The 4s CSS
+ * fallback forces it visible even if JS ever dies mid-init, so tiles can
+ * never strand hidden. Scoped to the full-Hero stage; HeroLite has no
+ * orbit hooks and is unaffected. */
+@keyframes orbit-stage-in {
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+[data-orbit-tiles-init]:not([data-orbit-ready]) [data-orbit-tiles-list] {
+  opacity: 0;
+  visibility: hidden;
+  animation: orbit-stage-in 0s 4s forwards;
+}
+
+/** -------------------------------------------------
+ * VIDEO LIGHTBOX — hide fixed chrome behind the player
+ * ------------------------------------------------- */
+/* The player backdrop is 88% opaque, so the Menu pill + lever + CV button
+ * ghost through it. Fade them out while any lightbox is open (class is
+ * toggled by VideoLightbox / the hero tile player). */
+.nav,
+.mc-lever,
+.cv-button,
+.scrollbar-wrap {
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+body.is-lightbox-open .nav,
+body.is-lightbox-open .mc-lever,
+body.is-lightbox-open .cv-button,
+body.is-lightbox-open .scrollbar-wrap {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/** -------------------------------------------------
  * DEVICE HARDENING — overflow, touch targets, tap behavior
  * ------------------------------------------------- */
 /* Never allow sideways page scroll (fixed/sticky chrome on narrow
@@ -1420,6 +1467,35 @@ body {
   .footer .link-button {
     max-width: 100%;
   }
+  /* The email button's min-width:max-content overrules max-width above
+   * (min wins) and shoves the whole footer past the viewport — release it
+   * on phones so the button shrinks and the address wraps. */
+  .footer .link-button.left-offset {
+    min-width: 0;
+  }
+  .footer .foooter-mail,
+  .footer .footer-mail-inner {
+    max-width: 100%;
+    min-width: 0;
+  }
+  /* Social icons: one centered row of compact targets — never wrap,
+   * never push past the viewport. */
+  .footer .social-list {
+    flex-wrap: nowrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .footer .social-item {
+    width: clamp(30px, 9vw, 38px);
+    height: clamp(30px, 9vw, 38px);
+    flex: none;
+  }
+  /* Mail / phone links: smaller type, one line each. */
+  .footer .footer-mail-inner .p1,
+  .footer .link-button .p1 {
+    white-space: nowrap;
+    font-size: 3.4vw;
+  }
   .footer .link-button .p1,
   .footer-mail-inner .p1 {
     overflow-wrap: anywhere;
@@ -1473,17 +1549,18 @@ body {
    * 1vw root scale) — give the CV button a real pixel gap below the
    * lever so both are tappable and clearly separated. */
   .cv-button {
-    /* +12px lever shift above + 24px air = 36px so the visual gap
-     * lever → CV stays a full 24px. */
+    /* +20px lever shift above + 16px air = 36px, so the visual gap
+     * lever → CV equals the ~16px Menu → lever gap. Equal by math. */
     top: calc(
       var(--_special-units---global--padding, 1rem) + 3.4rem +
         max(4rem, 47px) + 36px
     );
   }
   /* rem shrinks to a few px on phones — add a pixel floor so the lever
-   * keeps clear air below the Menu pill too. */
+   * keeps the same ~16px air below the Menu pill (3.4rem ≈ 13px, Menu
+   * pill ≈ 17px tall: 13 + 20 − 17 = 16). */
   .mc-lever {
-    top: calc(var(--_special-units---global--padding) + 3.4rem + 12px);
+    top: calc(var(--_special-units---global--padding) + 3.4rem + 20px);
   }
 }
 
@@ -1511,7 +1588,7 @@ body {
 /* Drop the theme lever further below the nav so it clears the 404
  * heading instead of sitting against it. */
 body:has(main[data-page="error-404"]) .mc-lever {
-  top: calc(var(--_special-units---global--padding) + 10.2rem);
+  top: calc(var(--_special-units---global--padding) + 9.2rem);
 }
 
 /** -------------------------------------------------
@@ -1622,7 +1699,13 @@ body:has(main[data-page="error-404"]) .mc-lever {
     grid-template-columns: 1fr 1px 1.55fr;
     column-gap: 6vw;
     align-items: stretch;
+    justify-content: stretch;
     width: 100%;
+    /* Clear the Webflow .progress-wrap box (height:2.083rem + right border
+     * + flex packing): without this the tall masthead overflows an 8px box
+     * and paints over the blocks below. */
+    height: auto;
+    border-right: none;
   }
   .hero-lite__left {
     display: flex;
@@ -1634,8 +1717,10 @@ body:has(main[data-page="error-404"]) .mc-lever {
     padding-bottom: 2vw;
   }
   .hero-lite__left .icon-wrap.is-logo {
-    width: 20vw;
-    max-width: 120px;
+    width: 30vw;
+    max-width: 170px;
+    /* Clear the fixed Webflow mark height so the wrap hugs the img. */
+    height: auto;
   }
   .hero-lite__divider {
     background: var(--_colors---content--primary, #111);
