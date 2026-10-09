@@ -620,11 +620,13 @@ function wireMobileFadeIns(scope: ParentNode): void {
     { threshold: 0 },
   );
   // ...then enable the transition on the next frame and observe.
+  // Staggered load cascade: top-to-bottom entrance in DOM order, capped so
+  // deep sections never feel late. Opacity-only — GPU-cheap on phones.
   const raf = requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       if (dead) return;
-      els.forEach((el) => {
-        el.style.transition = "opacity 0.6s ease-out";
+      els.forEach((el, i) => {
+        el.style.transition = `opacity 0.7s ease-out ${Math.min(i * 45, 450)}ms`;
       });
       els.forEach((el) => io.observe(el));
     }),

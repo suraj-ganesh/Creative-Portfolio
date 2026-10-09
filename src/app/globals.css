@@ -882,7 +882,6 @@ body.is-initial-loading .count {
   height: 46px;
   display: block;
   transition: transform 0.3s var(--ease-out, ease-out);
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
 }
 
 @media (min-width: 992px) {

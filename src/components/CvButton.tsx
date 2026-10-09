@@ -17,8 +17,6 @@ function ArchiveBoxIcon() {
       aria-hidden="true"
       className="cv-button__icon"
     >
-      {/* ground shadow */}
-      <ellipse cx="50" cy="84" rx="30" ry="4.5" fill="#000" opacity="0.4" />
       {/* back folders */}
       <g>
         <rect x="34" y="14" width="15" height="9" rx="3" fill="#f6e58d" stroke="#1c1c1e" strokeWidth="2" />
