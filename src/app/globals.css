@@ -1633,22 +1633,11 @@ body:has(main[data-page="error-404"]) .mc-lever {
     display: none !important;
   }
 
-  /* Pills in natural CSS flow on mobile (JS physics engine is skipped).
-     They must also be VISIBLE (base keeps them opacity:0 for the JS drop
-     animation) and must not swallow page scroll (base touch-action:none
-     is for desktop dragging). */
-  [data-contact-pills] {
-    position: relative !important;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
+  /* Contact pills run the JS drop physics on mobile too (same as
+      desktop). Keep touch scrolling working over the field — a touch that
+      becomes a scroll cancels the grab and the pill rejoins the sim, while
+      clean taps still open links. */
   [data-contact-pills] .cg-pill {
-    position: relative !important;
-    transform: none !important;
-    top: auto !important;
-    left: auto !important;
-    opacity: 1 !important;
     touch-action: manipulation !important;
   }
 
@@ -1663,6 +1652,14 @@ body:has(main[data-page="error-404"]) .mc-lever {
   [data-intro-step],
   [data-reveal] {
     visibility: visible !important;
+  }
+
+  /* The legacy 0-100% count lives in StickyName on every page, but mobile
+     never runs the legacy count-up (InitialLoader owns loading there, and
+     the count-up early-returns with no progress hook) — the remount
+     force-visible would otherwise strand a stuck "0%" at bottom-left. */
+  [data-preloader="count"] {
+    display: none !important;
   }
 
   /* Subtle CSS-only entrance for mobile: a single lightweight opacity fade
@@ -1804,11 +1801,46 @@ body:has(main[data-page="error-404"]) .mc-lever {
     position: relative;
     top: auto;
   }
-  /* Initial logo animation (mobile only — desktop uses the JS goo morph):
-     the mark pops in once on load, transform-only so it stays GPU-cheap. */
+  /* Mobile logo morph (PC goo-morph translated to GPU-cheap transforms:
+     blob squash → wobble → settle). The mark is a PNG so there's no path
+     to morph and no SVG filter is used — squash-and-stretch carries the
+     same blob-to-form language. Runs once on load, transform-only. */
+  @keyframes hero-lite-mark-morph {
+    0% {
+      opacity: 0;
+      transform: scale(1.6, 0.45) rotate(-12deg);
+    }
+    18% {
+      opacity: 1;
+      transform: scale(0.75, 1.35) rotate(9deg);
+    }
+    36% {
+      opacity: 1;
+      transform: scale(1.18, 0.88) rotate(-5deg);
+    }
+    55% {
+      opacity: 1;
+      transform: scale(0.94, 1.06) rotate(2deg);
+    }
+    72% {
+      opacity: 1;
+      transform: scale(1.03, 0.97) rotate(-1deg);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
   .hero-lite__mark img {
-    animation: hero-lite-mark-pop 0.8s var(--ease-out) 0.1s both;
+    animation: hero-lite-mark-morph 1.9s var(--ease-out) 0.1s both;
     transform-origin: 50% 50%;
+  }
+  /* Hold the morph at its first frame while the loading cover is up —
+     otherwise the whole sequence plays out invisibly behind it. Runs the
+     moment the cover releases (class removed); revisits have no cover so
+     it plays on mount as normal. */
+  body.is-initial-loading .hero-lite__mark img {
+    animation-play-state: paused;
   }
   /* Hero backdrop collage (the four poster stills) is removed on phones
    * per request — the mobile hero is type + mark only. The wrapper goes

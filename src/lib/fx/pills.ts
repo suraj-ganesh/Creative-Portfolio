@@ -1,4 +1,4 @@
-import { prefersReduced, qa, type Cleanup, noopCleanup, isMobile } from "@/lib/fx/core";
+import { prefersReduced, qa, type Cleanup, noopCleanup } from "@/lib/fx/core";
 
 /**
  * Contact-pill physics ([data-contact-pills] > .cg-pill), cloned from the
@@ -103,9 +103,9 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
   });
   if (!pills.length) return noopCleanup;
 
-  // Mobile fast-path: the per-frame physics rAF loop + collision detection
-  // is expensive on low-end phones. Pills stay in natural CSS flow instead.
-  if (isMobile()) return noopCleanup;
+  // NOTE: no mobile early-out — the fall/bounce/settle loop runs on phones
+  // too by request. transform-only paints keep it cheap; drag-on-touch may
+  // yield to page scroll (touch-action), taps still open links.
   const nameEl = (
     scope instanceof Document
       ? scope.querySelector(".cg-name.is-cut")
