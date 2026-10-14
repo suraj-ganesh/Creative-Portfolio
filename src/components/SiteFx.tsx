@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isMobile, qa } from "@/lib/fx/core";
+import { BUILD_ID } from "@/lib/buildId";
 import {
   initLenis,
   lenisStop,
@@ -465,6 +466,13 @@ export default function SiteFx() {
   // Boot once: persistent systems + first-visit preloader, then first page init.
   useEffect(() => {
     fxLog("boot start");
+    try {
+      (window as Window & { __BUILD_ID?: string }).__BUILD_ID = BUILD_ID;
+      // eslint-disable-next-line no-console
+      console.log(`[build ${BUILD_ID}]`);
+    } catch {
+      /* stamping must never break boot */
+    }
     const bootCleanups = [
       safe("lenis", initLenis),
       safe("haptics", initHaptics),

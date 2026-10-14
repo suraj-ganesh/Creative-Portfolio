@@ -278,6 +278,14 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
   };
 
   const paint = (b: PillBody) => {
+    // Final containment: no path (spawn, drag, solver, layout) can paint a
+    // pill outside the side walls — the clamp is a no-op for in-bounds
+    // poses, so settled/desktop rendering is pixel-identical. Guarded on a
+    // measured field so a zero-width measure can never crush positions.
+    if (metrics.fieldW > 0) {
+      const cx = clampPillX(metrics.fieldW, b, b.x);
+      if (cx !== b.x) b.x = cx;
+    }
     b.el.style.transform = `translate3d(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px, 0) rotate(${b.angle.toFixed(2)}deg)`;
   };
 
@@ -491,10 +499,47 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     }
   };
 
+  // Revival driver: if the rAF chain ever stalls externally (throttled
+  // frame budget on low-end phones, an exception mid-frame) while pills are
+  // awake, restart it instead of stranding pills mid-air. Idle pages stop
+  // the timer so nothing burns battery after settle.
+  let lastFrame = 0;
+  let reviveTimer = 0;
+  const stopRevive = () => {
+    if (reviveTimer) {
+      window.clearInterval(reviveTimer);
+      reviveTimer = 0;
+    }
+  };
+  const startRevive = () => {
+    if (reviveTimer || dead) return;
+    reviveTimer = window.setInterval(() => {
+      if (dead) {
+        stopRevive();
+        return;
+      }
+      if (performance.now() - lastFrame < 1500) return;
+      running = false;
+      if (bodies.some((b) => b.awake)) kick();
+      else stopRevive();
+    }, 750);
+  };
+  const onVisible = () => {
+    if (dead || document.hidden) return;
+    try {
+      layout();
+    } catch {
+      /* measuring must never break revival */
+    }
+    kick();
+  };
+
   const loop = () => {
     if (dead) return;
-    const now = performance.now();
+    lastFrame = performance.now();
+    const now = lastFrame;
     let alive = false;
+    try {
     for (const b of bodies) {
       if (!b.awake) continue;
       if (now < b.startAt) {
@@ -547,15 +592,27 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
         break;
       }
     }
+    } catch (err) {
+      // A mid-frame error must never kill the driver and strand pills
+      // mid-air — log, assume work remains if anything is awake, continue.
+      console.error("[fx] contact pills loop error (continuing):", err);
+      try {
+        alive = bodies.some((b) => b.awake);
+      } catch {
+        alive = false;
+      }
+    }
     if (alive) {
       raf = requestAnimationFrame(loop);
     } else {
       running = false;
+      stopRevive();
     }
   };
   const kick = () => {
     if (!running && !dead) {
       running = true;
+      startRevive();
       raf = requestAnimationFrame(loop);
     }
   };
@@ -688,12 +745,15 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
   layout();
   const t0 = performance.now();
   bodies.forEach((b, i) => spawn(b, i, t0));
+  window.addEventListener("visibilitychange", onVisible);
   kick();
 
   return () => {
     dead = true;
     if (running) cancelAnimationFrame(raf);
     running = false;
+    stopRevive();
+    window.removeEventListener("visibilitychange", onVisible);
     window.clearTimeout(rT);
     window.removeEventListener("resize", onResize);
     window.removeEventListener("pointermove", onMove);
