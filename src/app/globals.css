@@ -848,6 +848,48 @@ body.is-initial-loading .count {
   visibility: hidden !important;
 }
 
+/* Fail-open kill-switch (.fx-dead is added to <html> by the inline head
+ * script in the root layout when boot JS crashes with the loader up, or
+ * staged hooks never reveal). Forces the cover away and every staged hook
+ * visible. Stylesheet !important beats the non-important inline styles
+ * GSAP writes, so this wins over any half-applied staging. Only ever
+ * activates on a dead boot — healthy loads never get the class. */
+.fx-dead .initial-loader {
+  display: none !important;
+}
+.fx-dead [data-reveal],
+.fx-dead [data-intro-step],
+.fx-dead [data-logo-goo],
+.fx-dead [data-preloader="progress"],
+.fx-dead [data-preloader="text-1"],
+.fx-dead [data-preloader="text-2"],
+.fx-dead [data-sticky-name],
+.fx-dead [data-contact-reveal],
+.fx-dead [data-prevent-flicker],
+.fx-dead [data-works-item="wrap"],
+.fx-dead [data-works-item],
+.fx-dead [data-award],
+.fx-dead [data-contact-dial],
+.fx-dead [data-scrub-reveal],
+.fx-dead [data-parallax],
+.fx-dead [data-featured],
+.fx-dead [m-data-featured="list"],
+.fx-dead .icon-wrap,
+.fx-dead .split-line,
+.fx-dead .split-char,
+.fx-dead .split-word {
+  visibility: visible !important;
+  opacity: 1 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+/* The legacy count readout is preloader chrome, not content — never show it. */
+.fx-dead [data-preloader="count"] {
+  display: none !important;
+}
+
 /** -------------------------------------------------
  * CV BUTTON + MODAL + DOCUMENT
  * ------------------------------------------------- */
@@ -1649,6 +1691,14 @@ body:has(main[data-page="error-404"]) .mc-lever {
     background: none;
     border: 0;
     border-radius: 0;
+    /* Base `button.cg-pill { font: inherit }` (0,1,1) beats `.p1` (0,1,0),
+       shrinking Phone type to body size — invisible on desktop, miniature
+       on phones. Re-pin to p1 so it matches its siblings exactly. */
+    font-family: var(--_fonts---font-body);
+    font-size: var(--_fonts---p1--size);
+    line-height: var(--_fonts---p1--line-height);
+    letter-spacing: var(--_fonts---p1--letter-spacing);
+    font-weight: 500;
   }
   /* Uniform pill size on phones (labels range from "X" to "Instagram"):
      every pill clamps to the same width, text centered. em-based so it

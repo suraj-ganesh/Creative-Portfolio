@@ -1,6 +1,22 @@
-import * as THREE from "three";
+import type * as THREE from "three";
 import { gsap, DUR, prefersReduced, qa, type Cleanup } from "@/lib/fx/core";
 import { requestThemeMode, type ThemeMode } from "@/lib/theme";
+
+/**
+ * three.js is intentionally NOT statically imported here. This module is
+ * pulled into the root boot chunk (SiteFx + ThemeLever), so a static
+ * `import * as THREE` ships ~500KB of WebGL to every page on every
+ * device — including phones that never run a single three.js effect —
+ * and evaluates it on the critical boot path. Instead three loads lazily
+ * on first actual use (theme-dot/lever click or idle prewarm), keeping
+ * boot lean and keeping three's module evaluation off the crash-critical
+ * initial path.
+ */
+let threePromise: Promise<typeof THREE> | null = null;
+function loadThree(): Promise<typeof THREE> {
+  threePromise ??= import("three");
+  return threePromise;
+}
 
 /**
  * Port of the THREE goo/liquid transition from legacy `initThemeMode`
@@ -106,8 +122,11 @@ interface LiquidState {
 
 let state: LiquidState | null = null;
 
-function ensure(): LiquidState {
+async function ensure(): Promise<LiquidState> {
   if (state) return state;
+  // Throws if three.js fails to load/evaluate — callers treat that as
+  // "no liquid transition" and fall back to an instant theme swap.
+  const THREE = await loadThree();
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
   // The liquid mask is a blobby alpha cover — DPR 1 is plenty and keeps
   // the fullscreen fbm shader cheap on integrated GPUs.
@@ -171,13 +190,17 @@ function stopLoop(s: LiquidState) {
   }
 }
 
-export function runThemeLiquid(
+export async function runThemeLiquid(
   color: string,
   x = 0.5,
   y = 0.5,
   duration: number = DUR.L,
 ): Promise<void> {
-  const s = ensure();
+  // Never rejects: if three.js can't load (offline chunk, no WebGL),
+  // resolve quietly — the caller swaps the theme on its own timer, so
+  // the click still works, just without the liquid cover.
+  const s = await ensure().catch(() => null);
+  if (!s) return;
   if (s.tween) s.tween.kill();
   stopLoop(s);
 
@@ -230,7 +253,9 @@ export function runThemeLiquid(
 export function prewarmThemeLiquid(): void {
   if (typeof window === "undefined") return;
   try {
-    ensure();
+    void ensure().catch(() => {
+      /* three.js unavailable — first flip falls back to instant swap */
+    });
   } catch {
     /* WebGL unavailable — callers fall back gracefully */
   }

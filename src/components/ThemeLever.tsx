@@ -16,8 +16,19 @@ export default function ThemeLever() {
   const timer = useRef(0);
 
   // Compile the liquid-transition GL program while idle so the first
-  // flip has no shader-compile hitch.
+  // flip has no shader-compile hitch. Desktop only: three.js is ~750KB
+  // and phones may never flip the theme — a tap loads it on demand there
+  // instead of burning mobile data on idle prefetch.
   useEffect(() => {
+    try {
+      if (
+        window.matchMedia("(max-width: 991px)").matches ||
+        window.matchMedia("(pointer: coarse)").matches
+      )
+        return;
+    } catch {
+      /* matchMedia unavailable — fall through to prewarm */
+    }
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void) => number;
       cancelIdleCallback?: (id: number) => void;
