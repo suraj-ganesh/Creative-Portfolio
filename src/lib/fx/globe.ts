@@ -1,5 +1,12 @@
-import * as THREE from "three";
+let threePromise: Promise<typeof import("three")> | null = null;
+async function loadThree() {
+  if (!threePromise) {
+    threePromise = import("three");
+  }
+  return threePromise;
+}
 import { gsap, DUR, prefersReduced, qa, type Cleanup } from "@/lib/fx/core";
+import type * as THREE from "three";
 
 /**
  * Port of legacy `initGlobe` / `_initGlobeReal` / `animateGlobe` /
@@ -55,18 +62,6 @@ interface GlobeHost extends HTMLElement {
 
 const tracked = new Set<GlobeHost>();
 
-function fibSphere(count: number): THREE.Vector3[] {
-  const pts: THREE.Vector3[] = [];
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < count; i++) {
-    const y = 1 - (i / (count - 1)) * 2;
-    const r = Math.sqrt(Math.max(0, 1 - y * y));
-    const a = golden * i;
-    pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
-  }
-  return pts;
-}
-
 const bobPhase = (t: number) => 0.5 * (Math.sin(t * Math.PI * 2) + 1);
 
 function fadeInfoShow(el: HTMLElement) {
@@ -88,7 +83,9 @@ function fadeInfoHide(el: HTMLElement, after: () => void) {
   });
 }
 
-function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
+async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
+  const threeModule = await loadThree();
+  const THREE = threeModule as typeof import("three");
   const el = wrapEl as GlobeHost;
   const clientW = () => wrapEl.clientWidth;
   const clientH = () => wrapEl.clientHeight;
@@ -719,6 +716,17 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     } as CSSStyleDeclaration);
   }
   if (items.length) {
+    function fibSphere(count: number): THREE.Vector3[] {
+      const pts: THREE.Vector3[] = [];
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      for (let i = 0; i < count; i++) {
+        const y = 1 - (i / (count - 1)) * 2;
+        const r = Math.sqrt(Math.max(0, 1 - y * y));
+        const a = golden * i;
+        pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
+      }
+      return pts;
+    }
     const dirs = fibSphere(Math.ceil(2.5 * items.length))
       .filter((v) => Math.abs(v.y) < 0.55)
       .slice(0, items.length);
@@ -1105,7 +1113,7 @@ function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   }
 }
 
-export function initGlobe(scope: ParentNode = document): Cleanup {
+export async function initGlobe(scope: ParentNode = document): Promise<Cleanup> {
   if (typeof window === "undefined") return () => {};
   // Legacy parity: no globe on mobile (the mobile featured carousel
   // replaces it); initGlobeReal is desktop-only.
@@ -1123,14 +1131,14 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
     typeof scope.querySelector === "function" &&
     !!scope.querySelector("[data-filter-tab]");
   const cleanups: Cleanup[] = [];
-  qa<GlobeHost>('[data-globe="wrap"]', scope).forEach((host) => {
-    if (tracked.has(host)) return;
+  for (const host of qa<GlobeHost>('[data-globe="wrap"]', scope)) {
+    if (tracked.has(host)) continue;
     tracked.add(host);
     try {
-      initGlobeReal(host, scope);
+      await initGlobeReal(host, scope);
     } catch {
       tracked.delete(host);
-      return;
+      continue;
     }
     if (hasTabs) {
       // Tab-driven globe: hidden until its filter tab is selected.
@@ -1163,7 +1171,7 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
           /* noop */
         }
       });
-      return;
+      continue;
     }
     let fired = false;
     const io = new IntersectionObserver(
@@ -1192,7 +1200,7 @@ export function initGlobe(scope: ParentNode = document): Cleanup {
         /* noop */
       }
     });
-  });
+  }
   return () => {
     for (const fn of cleanups) {
       try {

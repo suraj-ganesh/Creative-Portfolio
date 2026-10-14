@@ -73,7 +73,8 @@ async function loadDesktopFx(
   try {
     if (names.includes("globe")) {
       const m = await import("@/lib/fx/globe");
-      cleanups.push(m.initGlobe());
+      const cleanup = await m.initGlobe();
+      cleanups.push(cleanup);
     }
   } catch (err) {
     console.error("[fx] globe failed:", err);
