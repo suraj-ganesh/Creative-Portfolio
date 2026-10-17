@@ -33,10 +33,10 @@ import { notifyLoaderDone } from "@/lib/loaderGate";
  */
 
 const MIN_DISPLAY_MS = 1400;
-const MAX_WAIT_MS = 8000;
+const MAX_WAIT_MS = 5000;
 const VIDEO_GRACE_MS = 2500;
 // Absolute ceiling: whatever happens, the cover must be gone by now.
-const FORCE_RELEASE_MS = 20000;
+const FORCE_RELEASE_MS = 10000;
 const OBSERVE_WINDOW_MS = 4000;
 // Mobile fast-path: phones decode slowly and often sit on 3g/4g — never
 // gate the intro on video buffering there. Shorter ceilings only.

@@ -14,7 +14,7 @@ export default function WorkGrid() {
     setActive(project);
   };
 
-  const renderTile = (project: Project) => {
+  const renderTile = (project: Project, index: number) => {
     // Bento tile: the frame takes the source's native shape —
     // 9:16 clips render tall, 16:9 clips render wide.
     const landscape = projectAspect(project) === "16:9";
@@ -45,7 +45,7 @@ export default function WorkGrid() {
                 once opened (tap anywhere on the tile). */}
             <img
               alt={project.title}
-              loading="lazy"
+              loading={index < 4 ? "eager" : "lazy"}
               decoding="async"
               sizes="(max-width: 991px) 50vw, (max-width: 1200px) 33vw, 25vw"
               src={project.coverImage}
@@ -126,7 +126,7 @@ export default function WorkGrid() {
               role="list"
               className="works-list w-dyn-items"
             >
-              {projects.map((project) => renderTile(project))}
+              {projects.map((project, index) => renderTile(project, index))}
             </div>
           </div>
         </div>

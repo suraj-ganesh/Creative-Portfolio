@@ -140,7 +140,7 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
       ) : (
         <img
           src={card.image}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
           decoding="async"
           alt={card.title}
           className="cover-image"
