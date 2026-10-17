@@ -26,9 +26,9 @@ export default function VideoLightbox({
   const [stage, setStage] = useState(0);
   const [dead, setDead] = useState(false);
   const sources = [
-    mediaUrl(project.videoSrc),
-    rawMediaUrl(project.videoSrc),
-    project.videoSrc,
+    mediaUrl(project.videoSrc),           // Cloudinary with transforms (production)
+    project.videoSrc,                      // local path (dev / tracking-prevention fallback)
+    rawMediaUrl(project.videoSrc),         // Cloudinary raw (last resort)
   ].filter((s): s is string => Boolean(s));
 
   // Reset the chain when a different project is opened in place.
