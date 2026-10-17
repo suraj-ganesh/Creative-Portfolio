@@ -1,19 +1,44 @@
 /**
  * Video URL resolution, in priority order:
  *
- * 1. CLOUD_URLS — exact local-path -> Cloudinary delivery URL map
+ * 1. Local /Videos path as-is (dev / prod-server) — same origin, no tracking
+ *    prevention issues, works offline. Cloudinary is tried as fallback.
+ * 2. CLOUD_URLS — exact local-path -> Cloudinary delivery URL map
  *    (cloud public_ids normalize spaces/parens/BOM, so a lookup table
- *    is the only exact approach). Active immediately, no env needed.
- * 2. NEXT_PUBLIC_MEDIA_BASE prefix — for future uploads that follow the
+ *    is the only exact approach). Used when local file fails or for
+ *    transformed renditions (compressed mobile/desktop).
+ * 3. NEXT_PUBLIC_MEDIA_BASE prefix — for future uploads that follow the
  *    clean pattern, e.g.
  *      NEXT_PUBLIC_MEDIA_BASE=https://res.cloudinary.com/<cloud>/video/upload/<folder>
- * 3. Local /Videos path as-is (dev / prod-server).
  *
  * Posters stay in the repo (tiny) and bypass this helper.
  */
 import { CLOUD_URLS } from "@/data/cloudUrls";
 
 const BASE = (process.env.NEXT_PUBLIC_MEDIA_BASE ?? "").replace(/\/$/, "");
+
+/** Check if we should prefer local files (tracking prevention, offline, etc.) */
+function shouldPreferLocal(): boolean {
+  if (typeof window === "undefined") return true; // SSR: prefer local
+  try {
+    // If Cloudinary was previously blocked, prefer local
+    if (sessionStorage.getItem("cloudinary-blocked") === "true") return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+/** Mark Cloudinary as blocked for this session */
+export function markCloudinaryBlocked(): void {
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem("cloudinary-blocked", "true");
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 /**
  * Mobile connection / device detection (client-only).
@@ -69,20 +94,35 @@ export interface MediaUrlOptions {
 
 /** Mapped Cloudinary URL with no transformations (fallback when a
  *  transformed rendition fails), or the local path as-is. */
-export function rawMediaUrl(path: string | undefined): string | undefined {
+export function rawMediaUrl(
+  path: string | undefined,
+  opts?: { forceCloudinary?: boolean },
+): string | undefined {
   if (!path) return path;
-  const mapped = CLOUD_URLS[path];
-  if (mapped) return mapped;
-  if (!BASE) return path;
+  // Try local first (same origin, no tracking prevention issues)
+  const localPath = path.startsWith("/") ? path : `/${path}`;
+  if (!shouldPreferLocal() || opts?.forceCloudinary) {
+    const mapped = CLOUD_URLS[path];
+    if (mapped) return mapped;
+  }
+  if (!BASE) return localPath;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
-  return `${BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  return `${BASE}${localPath}`;
 }
 
 export function mediaUrl(
   path: string | undefined,
-  opts?: MediaUrlOptions,
+  opts?: MediaUrlOptions & { forceCloudinary?: boolean },
 ): string | undefined {
   if (!path) return path;
+  // Try local first (same origin, no tracking prevention issues)
+  const localPath = path.startsWith("/") ? path : `/${path}`;
+
+  // If we should prefer local (tracking prevention, etc.), return local path
+  if (shouldPreferLocal() && !opts?.forceCloudinary) {
+    return localPath;
+  }
+
   const mapped = CLOUD_URLS[path];
   if (mapped) {
     // Cloudinary delivery URL — compress via fetch-time transformation.
@@ -94,7 +134,7 @@ export function mediaUrl(
     // Cloudinary for an mp4 rendition via f_auto instead of raw .mov.
     return injectCloudinaryTransform(mapped, t);
   }
-  if (!BASE) return path;
+  if (!BASE) return localPath;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) {
     // Already-absolute Cloudinary URL (not via lookup table) — same treatment.
     if (path.includes("res.cloudinary.com") && path.includes("/video/upload/")) {
@@ -106,5 +146,5 @@ export function mediaUrl(
     }
     return path;
   }
-  return `${BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  return `${BASE}${localPath}`;
 }
