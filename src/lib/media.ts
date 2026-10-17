@@ -1,12 +1,14 @@
 /**
  * Video URL resolution, in priority order:
  *
- * 1. Local /Videos path as-is (dev / prod-server) — same origin, no tracking
- *    prevention issues, works offline. Cloudinary is tried as fallback.
- * 2. CLOUD_URLS — exact local-path -> Cloudinary delivery URL map
+ * 1. CLOUD_URLS — exact local-path -> Cloudinary delivery URL map
  *    (cloud public_ids normalize spaces/parens/BOM, so a lookup table
- *    is the only exact approach). Used when local file fails or for
- *    transformed renditions (compressed mobile/desktop).
+ *    is the only exact approach). Active immediately, no env needed.
+ *    On browsers where Cloudinary is blocked by tracking prevention,
+ *    markCloudinaryBlocked() flips preference to local.
+ * 2. Local /Videos path as-is (dev / prod-server) — same origin, no tracking
+ *    prevention issues, works offline. Used as fallback when Cloudinary
+ *    fails or was previously blocked.
  * 3. NEXT_PUBLIC_MEDIA_BASE prefix — for future uploads that follow the
  *    clean pattern, e.g.
  *      NEXT_PUBLIC_MEDIA_BASE=https://res.cloudinary.com/<cloud>/video/upload/<folder>
@@ -17,9 +19,9 @@ import { CLOUD_URLS } from "@/data/cloudUrls";
 
 const BASE = (process.env.NEXT_PUBLIC_MEDIA_BASE ?? "").replace(/\/$/, "");
 
-/** Check if we should prefer local files (tracking prevention, offline, etc.) */
+/** Check if we should prefer local files (Cloudinary previously blocked) */
 function shouldPreferLocal(): boolean {
-  if (typeof window === "undefined") return true; // SSR: prefer local
+  if (typeof window === "undefined") return false; // SSR: Cloudinary first
   try {
     // If Cloudinary was previously blocked, prefer local
     if (sessionStorage.getItem("cloudinary-blocked") === "true") return true;
@@ -29,7 +31,7 @@ function shouldPreferLocal(): boolean {
   return false;
 }
 
-/** Mark Cloudinary as blocked for this session */
+/** Mark Cloudinary as blocked for this session so subsequent videos use local */
 export function markCloudinaryBlocked(): void {
   if (typeof window !== "undefined") {
     try {
@@ -99,12 +101,12 @@ export function rawMediaUrl(
   opts?: { forceCloudinary?: boolean },
 ): string | undefined {
   if (!path) return path;
-  // Try local first (same origin, no tracking prevention issues)
-  const localPath = path.startsWith("/") ? path : `/${path}`;
+  // Cloudinary first (production hosts videos there); local fallback if blocked
   if (!shouldPreferLocal() || opts?.forceCloudinary) {
     const mapped = CLOUD_URLS[path];
     if (mapped) return mapped;
   }
+  const localPath = path.startsWith("/") ? path : `/${path}`;
   if (!BASE) return localPath;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
   return `${BASE}${localPath}`;
@@ -115,25 +117,21 @@ export function mediaUrl(
   opts?: MediaUrlOptions & { forceCloudinary?: boolean },
 ): string | undefined {
   if (!path) return path;
-  // Try local first (same origin, no tracking prevention issues)
+  // Cloudinary first (production hosts videos there); local fallback if blocked
+  if (!shouldPreferLocal() || opts?.forceCloudinary) {
+    const mapped = CLOUD_URLS[path];
+    if (mapped) {
+      // Cloudinary delivery URL — compress via fetch-time transformation.
+      // Mobile gets a 480p capped rendition (~70-80% smaller than raw).
+      const wantMobile = opts?.mobile ?? isMobileConnection();
+      const t =
+        opts?.transform ?? (wantMobile ? MOBILE_VIDEO_TRANSFORM : DESKTOP_VIDEO_TRANSFORM);
+      // .mov sources can't play inline on many Android browsers — ask
+      // Cloudinary for an mp4 rendition via f_auto instead of raw .mov.
+      return injectCloudinaryTransform(mapped, t);
+    }
+  }
   const localPath = path.startsWith("/") ? path : `/${path}`;
-
-  // If we should prefer local (tracking prevention, etc.), return local path
-  if (shouldPreferLocal() && !opts?.forceCloudinary) {
-    return localPath;
-  }
-
-  const mapped = CLOUD_URLS[path];
-  if (mapped) {
-    // Cloudinary delivery URL — compress via fetch-time transformation.
-    // Mobile gets a 480p capped rendition (~70-80% smaller than raw).
-    const wantMobile = opts?.mobile ?? isMobileConnection();
-    const t =
-      opts?.transform ?? (wantMobile ? MOBILE_VIDEO_TRANSFORM : DESKTOP_VIDEO_TRANSFORM);
-    // .mov sources can't play inline on many Android browsers — ask
-    // Cloudinary for an mp4 rendition via f_auto instead of raw .mov.
-    return injectCloudinaryTransform(mapped, t);
-  }
   if (!BASE) return localPath;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) {
     // Already-absolute Cloudinary URL (not via lookup table) — same treatment.

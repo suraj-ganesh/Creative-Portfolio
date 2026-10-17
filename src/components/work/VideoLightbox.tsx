@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
 import { projectDescription } from "@/data/videoDescriptions";
 import { lenisStart, lenisStop } from "@/lib/fx/lenis";
-import { mediaUrl, rawMediaUrl } from "@/lib/media";
+import { mediaUrl, rawMediaUrl, markCloudinaryBlocked } from "@/lib/media";
 
 /**
  * Fullscreen video lightbox for the Work section. Opens on card press,
@@ -126,6 +126,9 @@ export default function VideoLightbox({
     const onError = () => {
       window.clearTimeout(timer);
       if (!disposed) {
+        // If the Cloudinary source failed, mark it blocked so subsequent
+        // videos use the local fallback instead of hitting tracking prevention.
+        if (stage === 0) markCloudinaryBlocked();
         if (stage + 1 < sources.length) setStage(stage + 1);
         else setDead(true);
       }
