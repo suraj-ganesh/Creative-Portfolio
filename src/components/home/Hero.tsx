@@ -122,6 +122,9 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
   }, [inView]);
 
   const showVideo = Boolean(card.videoSrc) && inView && (!isMobile || eager);
+  // Only the eager (first) tile preloads metadata; others wait for intersection
+  // to avoid blocking InitialLoader with 12+ simultaneous video metadata loads.
+  const preload = eager && !isMobile ? "metadata" : "none";
   return (
     <div ref={wrapRef} style={{ width: "100%", height: "100%" }}>
       {showVideo ? (
@@ -132,7 +135,7 @@ function OrbitTileMedia({ card, eager }: { card: OrbitCard; eager: boolean }) {
           muted
           loop
           playsInline
-          preload={isMobile ? "none" : "metadata"}
+          preload={preload}
           aria-label={card.title}
           className="cover-image"
           disablePictureInPicture
