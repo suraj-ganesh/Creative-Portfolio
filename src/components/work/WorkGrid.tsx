@@ -101,6 +101,11 @@ export default function WorkGrid() {
             </div>
           </div>
         </div>
+        <div data-works-cue="" className="works-scroll-cue" aria-hidden="true">
+          <div data-reveal="text" className="p1">
+            Scroll down to view
+          </div>
+        </div>
       </div>
 
       <div className="works-inner">

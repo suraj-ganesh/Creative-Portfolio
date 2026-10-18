@@ -409,6 +409,26 @@ html {
   }
 }
 
+/* "Scroll down to view" cue — sits between the 24/26 overlay dates and
+ * fades out as the page starts scrolling (opacity is driven by
+ * wireWorksScrollCue in reveal.ts). Covers the collapsed hole at rest,
+ * so it must sit above the overlay text but never intercept input. */
+.works-scroll-cue {
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (min-width: 992px) {
+  /* Overlay is full-screen sticky here — center the cue in the viewport,
+   * exactly between the left "24" and right "26". */
+  .works-scroll-cue {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 /** -------------------------------------------------
  * LINK BUTTON
  * ------------------------------------------------- */
@@ -647,14 +667,23 @@ html {
    * glyph tops, never sunk into the letters. */
   margin-bottom: -2vw;
 }
+/* Pills default to a STATIC flex row above the wordmark so the contact
+ * links are visible with JavaScript dead / never hydrated. Once
+ * initContactPills claims the field it sets [data-pills-js] — pills then
+ * go absolute+transparent and the fall/bounce/settle loop owns them
+ * (inline opacity/transform take over from there). */
 .cg-pill {
+  position: relative;
+  opacity: 1;
+  cursor: grab;
+  will-change: transform;
+}
+.cg-field[data-pills-js] .cg-pill {
   position: absolute;
   top: 0;
   left: 0;
   opacity: 0;
-  cursor: grab;
   touch-action: none;
-  will-change: transform;
 }
 button.cg-pill {
   background: none;
@@ -968,15 +997,14 @@ body.is-initial-loading .count {
 
 .cv-modal__scroll {
   position: relative;
-  /* margin:auto centers when short AND keeps the top reachable when the
-   * sheet exceeds the viewport (plain flex centering can clip the top). */
+  /* No max-height / own scrolling here: .cv-modal is the single scroll
+   * container. An inner max-height only shows the top half of the sheet
+   * whenever the inner wheel scroll fails (e.g. a parked Lenis), which is
+   * exactly the "half the CV" bug on other devices. margin:auto still
+   * centers when short and keeps the top reachable when the sheet exceeds
+   * the viewport (plain flex centering can clip the top). */
   margin: auto;
   width: min(880px, 100%);
-  max-height: min(92vh, 1000px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   animation: cv-sheet-in 0.45s var(--ease-out, ease-out);
 }
 

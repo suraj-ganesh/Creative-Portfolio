@@ -135,7 +135,10 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
   const ORDER_LIFT = 500;
   const MAX_CONCURRENT = 6;
   // A sphere card exists ONLY once its video can play — no still frames,
-  // ever. Failed loads retry, then the item is skipped outright.
+  // ever. Failed loads retry, then the item is skipped outright... with one
+  // gated exception: a video that exhausts every retry (blocked CDN host,
+  // unsupported codec) falls back to its poster image below, because a
+  // permanently empty sphere is the worse failure mode.
   const VIDEO_LOAD_TIMEOUT_MS = 15000;
   const VIDEO_LOAD_RETRIES = 3;
   const VIDEO_RETRY_DELAY_MS = 2500;
@@ -345,7 +348,14 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
         return;
       }
       cardVideos.delete(vid);
-      done();
+      if (!tornDown) {
+        // Last resort: this video can never play on this device (blocked
+        // host, missing codec, retries exhausted). An empty rotation is
+        // worse than a still frame — fall back to the item's poster card.
+        loadImageCard(vid, dir, slug, done);
+      } else {
+        done();
+      }
     };
     try {
       // Database <video> nodes use preload="none" so nothing buffers until
@@ -465,6 +475,75 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     cards.push(card);
     cardMeshes = cards.map((c) => c.mesh);
     done();
+  };
+
+  /** Last-resort card built from the item's poster <img>. Reuses the ALREADY
+   *  loaded DOM image (no second network fetch). Guarded against cross-origin
+   *  images without CORS — sampling those would taint the WebGL canvas and
+   *  kill every draw (SecurityError per render), which is strictly worse. */
+  const loadImageCard = (
+    vid: HTMLVideoElement,
+    dir: THREE.Vector3,
+    slug: string,
+    done: () => void,
+  ): void => {
+    if (tornDown) {
+      done();
+      return;
+    }
+    const img = vid.closest('[data-globe="img"]')?.querySelector("img");
+    if (!img || !img.getAttribute("src")) {
+      done();
+      return;
+    }
+    const finish = (ok: boolean): void => {
+      if (tornDown || !ok || !img) {
+        done();
+        return;
+      }
+      let sameOrigin = false;
+      try {
+        sameOrigin = new URL(img.src, location.href).origin === location.origin;
+      } catch {
+        sameOrigin = false;
+      }
+      if (!sameOrigin && img.crossOrigin !== "anonymous") {
+        done();
+        return;
+      }
+      try {
+        // Set needsUpdate before first sample — Texture(img) is not marked
+        // dirty by the constructor.
+        const tex = new THREE.Texture(img);
+        tex.needsUpdate = true;
+        addCard(tex, dir, slug, done, null);
+      } catch {
+        done();
+      }
+    };
+    if (img.complete && img.naturalWidth > 0) {
+      finish(true);
+    } else if (img && img.getAttribute("src")) {
+      const t = window.setTimeout(() => finish(false), 5000);
+      img.addEventListener(
+        "load",
+        () => {
+          window.clearTimeout(t);
+          finish(true);
+        },
+        { once: true },
+      );
+      img.addEventListener(
+        "error",
+        () => {
+          window.clearTimeout(t);
+          finish(false);
+        },
+        { once: true },
+      );
+    } else {
+      done();
+    }
   };
 
   const moveToOverlay = (card: GlobeCard) => {

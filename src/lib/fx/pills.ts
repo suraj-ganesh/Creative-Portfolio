@@ -742,6 +742,11 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     };
   }
 
+  // Claim the field before layout: [data-pills-js] switches .cg-pill from
+  // the static-flow fallback (globals.css) to the absolute/transparent
+  // state this loop drives. If this whole init never ran, the pills stay
+  // visible as a plain flex row instead of silently disappearing.
+  fields.forEach((f) => f.setAttribute("data-pills-js", "1"));
   layout();
   const t0 = performance.now();
   bodies.forEach((b, i) => spawn(b, i, t0));
@@ -759,9 +764,15 @@ export function initContactPills(scope: ParentNode = document): Cleanup {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
     window.removeEventListener("pointercancel", onUp);
+    // Let the static fallback win again: clear every inline style the sim
+    // left behind or translated ghosts would fight the flex-flow pack.
+    fields.forEach((f) => f.removeAttribute("data-pills-js"));
     bodies.forEach((b, i) => {
       b.el.removeEventListener("pointerdown", downs[i]);
       b.el.removeEventListener("click", clicks[i], true);
+      b.el.style.transform = "";
+      b.el.style.opacity = "";
+      b.el.style.zIndex = "";
     });
   };
 }

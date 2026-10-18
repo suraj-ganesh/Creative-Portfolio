@@ -1176,6 +1176,101 @@ function trackSTReturn(st: ScrollTrigger): ScrollTrigger {
   return st;
 }
 
+/** "Scroll down to view" cue in the works overlay: fades over the first
+ *  ~35vh of scroll. Numeric start/end need no trigger element, so the same
+ *  wiring covers the mobile static-header overlay; on the slow-phone path
+ *  it is skipped and the cue simply scrolls away with the static header. */
+function wireWorksScrollCue(scope: ParentNode, local: ScrollTrigger[]): void {
+  const cue = scope.querySelector<HTMLElement>('[data-works-cue]');
+  if (!cue) return;
+  cue.style.opacity = "1";
+  const dist = Math.max(120, Math.round(window.innerHeight * 0.35));
+  local.push(
+    trackSTReturn(
+      ScrollTrigger.create({
+        start: 0,
+        end: dist,
+        scrub: true,
+        onUpdate: (self) => {
+          cue.style.opacity = String(1 - self.progress);
+        },
+      }),
+    ),
+  );
+  trackCleanup(() => {
+    cue.style.opacity = "";
+  });
+}
+
+/** Seal threshold: ~35vh of real scrolling (≥160px). Computed lazily —
+ *  module scope is evaluated on the server too. */
+const WORKS_SEAL_PX = (): number =>
+  Math.max(
+    160,
+    Math.round(
+      (typeof window !== "undefined" ? window.innerHeight : 900) * 0.35,
+    ),
+  );
+
+/**
+ * Emergency net for the works hole-mask. The scrub is the ONLY thing that
+ * opens the sealed desktop overlay; if this module dies before its
+ * ScrollTriggers exist (an error in another reveal hook, a chunk failure,
+ * a mis-measured refresh), the user is stuck on a page of "24/26"
+ * disconnected from the grid forever. Runs as its own SiteFx `safe()` so
+ * it survives a crash anywhere else in the boot chain. If the overlay is
+ * still effectively sealed past WORKS_SEAL_PX of real scrolling — the
+ * healthy scrub would show --hole-progress ≈ scroll/100vh there — hide
+ * the cover entirely.
+ */
+export function armWorksMaskWatchdog(): Cleanup {
+  if (typeof window === "undefined") return () => {};
+  const overlay = document.querySelector<HTMLElement>(".works-overlay");
+  if (!overlay) return () => {};
+  try {
+    if (window.matchMedia("(max-width: 991px)").matches) return () => {};
+  } catch {
+    return () => {};
+  }
+  let done = false;
+  const sealPx = WORKS_SEAL_PX();
+  const unseal = () => {
+    if (done) return;
+    done = true;
+    console.warn("[fx] works mask stalled — watchdog unsealing overlay");
+    overlay.style.clipPath = "none";
+    overlay.style.setProperty("--hole-progress", "1");
+    overlay.style.visibility = "hidden";
+  };
+  const check = (): void => {
+    if (done) return;
+    if (window.scrollY < sealPx) return;
+    let p = NaN;
+    try {
+      p = parseFloat(overlay.style.getPropertyValue("--hole-progress"));
+    } catch {
+      /* sealed by definition */
+    }
+    if (Number.isFinite(p) && p > 0.05) {
+      done = true;
+      return;
+    }
+    unseal();
+  };
+  // Scroll restoration / deep links: judge the current state after boot,
+  // once the scrub signals its presence (1200ms covers refresh timing).
+  const boot = window.setTimeout(check, 1200);
+  window.addEventListener("scroll", check, { passive: true });
+  return () => {
+    window.clearTimeout(boot);
+    done = true;
+    window.removeEventListener("scroll", check);
+    overlay.style.clipPath = "";
+    overlay.style.removeProperty("--hole-progress");
+    overlay.style.visibility = "";
+  };
+}
+
 /** Standalone filter tabs. Simplified vs legacy: legacy cross-faded globe /
  *  cards scenes with staggered card splits; here we toggle .is-active,
  *  opacity, and matching [data-filter-content] visibility, then refresh. */
@@ -1707,6 +1802,7 @@ export function initReveals(scope: ParentNode = document): Cleanup {
     if (!slow) {
       wireFeaturedHeightMobile(scope, []);
       wireMobileFadeIns(scope);
+      wireWorksScrollCue(scope, []);
     }
     // Deferred refresh (mobile-only): measuring trigger positions
     // synchronously here forces layout during route commit — the top cause
@@ -1747,6 +1843,7 @@ export function initReveals(scope: ParentNode = document): Cleanup {
   wireFeaturedWidth(scope, []);
   wireFeaturedHeightMobile(scope, []);
   wireWorksIntroMask(scope, []);
+  wireWorksScrollCue(scope, []);
   wireFilterTabs(scope);
   wireWorksItemRise(scope);
   wireWorksItemHover(scope);

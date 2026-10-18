@@ -46,6 +46,10 @@ export default function CvModal({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-label={`${cv.name} — CV`}
       className="cv-modal"
+      // Lenis must not intercept wheel events inside the modal — it parks
+      // itself via lenisStop() but still consumes wheel events, which would
+      // leave .cv-modal (the only scroll container) unreachable on desktop.
+      data-lenis-prevent=""
       onClick={onClose}
     >
       <div className="cv-modal__backdrop" aria-hidden="true" />

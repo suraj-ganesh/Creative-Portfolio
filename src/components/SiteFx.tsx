@@ -15,7 +15,7 @@ import { initHaptics } from "@/lib/fx/haptics";
 import { initLinks } from "@/lib/fx/links";
 import { initTiltCursor } from "@/lib/fx/tilt";
 import { initCustomScrollbar } from "@/lib/fx/scrollbar";
-import { initReveals, killReveals, revealNow } from "@/lib/fx/reveal";
+import { initReveals, killReveals, revealNow, armWorksMaskWatchdog } from "@/lib/fx/reveal";
 import { runPreloader } from "@/lib/fx/preloader";
 import { playHeroIntro, killHeroIntro, revealHeroInstant } from "@/lib/fx/heroIntro";
 import { initNav, closeMenu, updateNavIndicators } from "@/lib/fx/nav";
@@ -325,6 +325,10 @@ export default function SiteFx() {
     }
     pageCleanups.current = [
       safe("reveals", () => initReveals()),
+      // Independent of initReveals on purpose: if the reveal module dies
+      // before creating the works mask scrub, the veil stays sealed and
+      // the watchdog needs to survive that failure mode.
+      safe("worksmask", () => armWorksMaskWatchdog()),
       safe("links", () => initLinks()),
       safe("tilt", () => initTiltCursor()),
       safe("dial", () => initContactDial()),
