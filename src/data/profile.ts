@@ -48,7 +48,7 @@ export interface Profile {
 export const profile: Profile = {
   firstName: "Suraj",
   lastName: "Ganesh",
-  role: "Video Editor & Colorist",
+  role: "Video Editor & Designer",
   location: "Based in Jhapa",
   company: {
     name: "KHARAAYO INC.",

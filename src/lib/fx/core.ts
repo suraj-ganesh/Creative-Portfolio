@@ -1,10 +1,4 @@
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
-import { Draggable } from "gsap/Draggable";
-import { InertiaPlugin } from "gsap/InertiaPlugin";
-import { CustomEase } from "gsap/CustomEase";
-import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
+import gsap, { ScrollTrigger, SplitText, Draggable, InertiaPlugin, CustomEase, MorphSVGPlugin } from "gsap/all";
 
 gsap.registerPlugin(
   ScrollTrigger,

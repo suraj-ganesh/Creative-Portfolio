@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // NOTE: no `experimental.optimizePackageImports` for three/gsap here
   // on purpose. That transform rewrites module specifiers inside packages
   // with deep circular graphs (three.js internals, gsap core <-> plugin

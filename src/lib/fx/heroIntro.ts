@@ -13,7 +13,7 @@ import {
  *      fallback mark is in use)
  *   2. the vertical divider lines draw top -> bottom
  *   3. "Suraj Ganesh" rises
- *   4. the "Video Editor & Colorist" role line rises
+ *   4. the "Video Editor & Designer" role line rises
  *   6. the menu flies in
  *   7. the theme lever fades in
  *
