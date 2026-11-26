@@ -43,6 +43,7 @@ export function initStickyName(): Cleanup {
   let ready = qa("[data-preloader]").length === 0;
   let built = false;
   let settledTimer: ReturnType<typeof setTimeout> | null = null;
+  let userScrolled = false;
 
   function hideMeta(instant: boolean): void {
     gsap.killTweensOf(metas);
@@ -69,7 +70,14 @@ export function initStickyName(): Cleanup {
 
   function atBottom(): boolean {
     const limit = document.documentElement.scrollHeight - window.innerHeight;
-    return limit <= 2 || window.scrollY >= limit - 2;
+    // Require real user scroll progress so fallback/build/refresh checks
+    // cannot auto-reveal meta on initial load or restored top position.
+    return (
+      userScrolled &&
+      limit > 80 &&
+      window.scrollY > 40 &&
+      window.scrollY >= limit - 2
+    );
   }
 
   function checkBottom(): void {
@@ -90,6 +98,9 @@ export function initStickyName(): Cleanup {
       triggered = false;
       hideMeta(false);
       tl.reverse();
+    } else if (!bottom) {
+      // Guard against any stray reveal (e.g. refresh/timing edge cases).
+      hideMeta(true);
     }
   }
 
@@ -118,9 +129,19 @@ export function initStickyName(): Cleanup {
       .add(() => revealMeta());
     tl.progress(0).pause();
 
-    const onScroll = () => checkBottom();
+    const markScrolled = () => {
+      if (window.scrollY > 8) userScrolled = true;
+    };
+    const onScroll = () => {
+      markScrolled();
+      checkBottom();
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", markScrolled, { passive: true });
+    window.addEventListener("touchmove", markScrolled, { passive: true });
     cleanups.push(() => window.removeEventListener("scroll", onScroll));
+    cleanups.push(() => window.removeEventListener("wheel", markScrolled));
+    cleanups.push(() => window.removeEventListener("touchmove", markScrolled));
     const onSettled = () => checkBottom();
     window.addEventListener("lenis:settled", onSettled);
     cleanups.push(() => window.removeEventListener("lenis:settled", onSettled));

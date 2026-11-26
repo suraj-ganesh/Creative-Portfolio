@@ -3,21 +3,32 @@
 import { useCallback, useState } from "react";
 import { projects, projectAspect, type Project } from "@/data/projects";
 import VideoLightbox from "@/components/work/VideoLightbox";
+import ImageLightbox from "@/components/work/ImageLightbox";
+
+const POSTER_ASPECT = "3:4";
+
+function getMediaType(project: Project): "video" | "poster" {
+  if (project.mediaType) return project.mediaType;
+  return project.videoSrc ? "video" : "poster";
+}
+
+function getPosterServices(): string[] {
+  return ["Graphic Poster", "Figma", "Photoshop"];
+}
 
 export default function WorkGrid() {
   const [active, setActive] = useState<Project | null>(null);
   const closeLightbox = useCallback(() => setActive(null), []);
 
-  const openPlayer = (e: React.MouseEvent, project: Project) => {
+  const openViewer = (e: React.MouseEvent, project: Project) => {
     e.preventDefault();
-    if (!project.videoSrc) return;
     setActive(project);
   };
 
   const renderTile = (project: Project, index: number) => {
-    // Bento tile: the frame takes the source's native shape —
-    // 9:16 clips render tall, 16:9 clips render wide.
     const landscape = projectAspect(project) === "16:9";
+    const isPoster = getMediaType(project) === "poster";
+    const aspectRatio = isPoster ? POSTER_ASPECT : (landscape ? "16 / 9" : "9 / 16");
     return (
       <div
         key={project.slug}
@@ -25,24 +36,25 @@ export default function WorkGrid() {
         data-works-item="wrap"
         data-tab-content-reval="item"
         role="listitem"
-        className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"}`}
-        data-aspect={landscape ? "16:9" : "9:16"}
+        className={`works-item works-bento-item${landscape ? " is-landscape" : " is-portrait"} ${isPoster ? " is-poster" : ""}`}
+        data-aspect={isPoster ? POSTER_ASPECT : (landscape ? "16:9" : "9:16")}
       >
         <a
           className="works-item-link-overlay w-inline-block"
           href="#work"
-          aria-label={`${project.title} — play video`}
-          onClick={(e) => openPlayer(e, project)}
+          aria-label={`${project.title} — ${getMediaType(project)}`}
+          onClick={(e) => openViewer(e, project)}
         ></a>
         <div className="works-item-image-wrap">
           <div
             className="works-item-image-inner"
             style={{
-              aspectRatio: landscape ? "16 / 9" : "9 / 16",
+              aspectRatio: aspectRatio,
             }}
           >
-            {/* Still frame only — the video runs in the lightbox
-                once opened (tap anywhere on the tile). */}
+            <div className={`works-item-type-badge ${getMediaType(project)}`}>
+              {getMediaType(project)}
+            </div>
             <img
               alt={project.title}
               loading={index < 4 ? "eager" : "lazy"}
@@ -60,16 +72,16 @@ export default function WorkGrid() {
           <button
             type="button"
             className="button w-inline-block"
-            aria-label={`${project.title} — play video`}
+            aria-label={`${project.title} — ${getMediaType(project)}`}
             style={{ cursor: "pointer" }}
-            onClick={(e) => openPlayer(e, project)}
+            onClick={(e) => openViewer(e, project)}
           >
             <div className="link-inner">
               <div data-link="label" className="p1">
-                Play
+                {getMediaType(project) === "video" ? "Play" : "View"}
               </div>
               <div data-link="shadow" className="p1 is-2">
-                Play
+                {getMediaType(project) === "video" ? "Play" : "View"}
               </div>
             </div>
           </button>
@@ -84,7 +96,7 @@ export default function WorkGrid() {
         <div className="w-layout-grid grid">
           <div
             data-works-intro="left-text"
-            id="w-node-_2a6e3a7d-342a-8d2a-0e57-4d7a32689e44-3f92bac2"
+            id="w-node-_2a6f1581-6773-0695-794b-998a67dcf734-3f92bac2"
             className="works-overlay-left"
           >
             <div data-reveal="text" className="h1">
@@ -101,7 +113,7 @@ export default function WorkGrid() {
             </div>
           </div>
         </div>
-        <div data-works-cue="" className="works-scroll-cue" aria-hidden="true">
+        <div data-works-cue="" className="works-scroll-cue">
           <div data-reveal="text" className="p1">
             Scroll down to view
           </div>
@@ -146,6 +158,13 @@ export default function WorkGrid() {
 
       {active && active.videoSrc && (
         <VideoLightbox project={active} onClose={closeLightbox} />
+      )}
+      {active && getMediaType(active) === "poster" && !active.videoSrc && (
+        <ImageLightbox 
+          project={active} 
+          onClose={closeLightbox} 
+          services={getPosterServices()}
+        />
       )}
     </section>
   );

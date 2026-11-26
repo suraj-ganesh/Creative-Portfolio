@@ -537,7 +537,9 @@ const UNHIDE_SEL = [
 /** Make every hidden hook visible immediately. Used for reduced-motion and
  *  excluded pages. Reverts SplitText so no masked lines stay offset. */
 export function revealNow(scope: ParentNode = document): void {
-  const els = qa<HTMLElement>(UNHIDE_SEL, scope);
+  const els = qa<HTMLElement>(UNHIDE_SEL, scope).filter(
+    (el) => !el.closest(".sticky-name") || !el.matches("[data-sticky-meta]"),
+  );
   els.forEach((el) => {
     const host = el as SplitHost;
     if (host._split) {
@@ -595,7 +597,9 @@ const MOBILE_FADE_SEL = [
  *  orthogonal — opacity never fights their transforms. */
 function wireMobileFadeIns(scope: ParentNode): void {
   const els = qa<HTMLElement>(MOBILE_FADE_SEL, scope).filter(
-    (el) => el.isConnected,
+    (el) =>
+      el.isConnected &&
+      !(el.closest(".sticky-name") && el.matches("[data-sticky-meta]")),
   );
   if (!els.length) return;
   let dead = false;
@@ -1138,8 +1142,13 @@ function wireWorksIntroMask(scope: ParentNode, local: ScrollTrigger[]): void {
   const fullW = (): number => overlay.offsetWidth / 2;
   const fullH = (): number => overlay.offsetHeight / 2;
   const inPhase = (p: number): void => {
-    paint(hx + (fullW() - hx) * p, hy + (fullH() - hy) * p);
-    overlay.style.setProperty("--hole-progress", String(p));
+    if (p <= 0.001) {
+      overlay.style.clipPath = "none";
+      overlay.style.setProperty("--hole-progress", "0");
+    } else {
+      paint(hx + (fullW() - hx) * p, hy + (fullH() - hy) * p);
+      overlay.style.setProperty("--hole-progress", String(p));
+    }
     if (leftText) gsap.set(leftText, { x: `${-50 * p}vw` });
     if (rightText) gsap.set(rightText, { x: `${50 * p}vw` });
   };
@@ -1147,28 +1156,35 @@ function wireWorksIntroMask(scope: ParentNode, local: ScrollTrigger[]): void {
     paint(fullW() + (hx - fullW()) * p, fullH() + (hy - fullH()) * p);
     overlay.style.setProperty("--hole-progress", String(1 - p));
   };
-  local.push(
-    trackSTReturn(
-      ScrollTrigger.create({
-        trigger,
-        start: "center center",
-        end: "top top",
-        scrub: true,
-        onUpdate: (self) => inPhase(self.progress),
-      }),
-    ),
-  );
-  local.push(
-    trackSTReturn(
-      ScrollTrigger.create({
-        trigger: out,
-        start: "top bottom",
-        end: "bottom bottom",
-        scrub: true,
-        onUpdate: (self) => outPhase(self.progress),
-      }),
-    ),
-  );
+  let inST: ScrollTrigger | null = null;
+  let outST: ScrollTrigger | null = null;
+  inST = ScrollTrigger.create({
+    trigger,
+    start: "center center",
+    end: "top top",
+    scrub: true,
+    onUpdate: (self) => {
+      // Don't let the in-phase overwrite out-phase when we're past the grid.
+      if (outST && outST.progress > 0 && outST.progress < 1) return;
+      if (outST && outST.progress >= 1) return;
+      inPhase(self.progress);
+    },
+  });
+  outST = ScrollTrigger.create({
+    trigger: out,
+    start: "top bottom",
+    end: "bottom bottom",
+    scrub: true,
+    onUpdate: (self) => {
+      // Only apply out-phase once the in-phase has fully opened the mask.
+      if (inST && inST.progress < 1) return;
+      outPhase(self.progress);
+    },
+  });
+  local.push(trackSTReturn(inST));
+  local.push(trackSTReturn(outST));
+  // Paint initial state explicitly so top-of-page always matches first load.
+  inPhase(inST.progress || 0);
 }
 
 function trackSTReturn(st: ScrollTrigger): ScrollTrigger {
@@ -1240,11 +1256,22 @@ export function armWorksMaskWatchdog(): Cleanup {
     console.warn("[fx] works mask stalled — watchdog unsealing overlay");
     overlay.style.clipPath = "none";
     overlay.style.setProperty("--hole-progress", "1");
-    overlay.style.visibility = "hidden";
+  };
+  const reseal = () => {
+    if (!done) return;
+    done = false;
+    overlay.style.clipPath = "";
+    overlay.style.removeProperty("--hole-progress");
+    overlay.style.visibility = "";
+    const cue = overlay.querySelector<HTMLElement>("[data-works-cue]");
+    if (cue) cue.style.opacity = "1";
   };
   const check = (): void => {
+    if (window.scrollY < sealPx) {
+      reseal();
+      return;
+    }
     if (done) return;
-    if (window.scrollY < sealPx) return;
     let p = NaN;
     try {
       p = parseFloat(overlay.style.getPropertyValue("--hole-progress"));
@@ -1683,6 +1710,9 @@ function wireParallax(scope: ParentNode, local: ScrollTrigger[]): void {
  *  machine lives in another module. */
 function wireStickyMeta(scope: ParentNode, local: ScrollTrigger[]): void {
   qa<HTMLElement>('[data-sticky-meta="text"]', scope).forEach((el) => {
+    // The sticky-name bottom section controls its own meta visibility
+    // (revealed only when names join at page bottom).
+    if (el.closest(".sticky-name")) return;
     gsap.set(el, { visibility: "visible" });
     animateTextReveal(el, "initial");
     local.push(

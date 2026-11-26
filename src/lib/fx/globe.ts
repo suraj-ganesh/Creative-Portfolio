@@ -350,9 +350,9 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
       cardVideos.delete(vid);
       if (!tornDown) {
         // Last resort: this video can never play on this device (blocked
-        // host, missing codec, retries exhausted). An empty rotation is
-        // worse than a still frame — fall back to the item's poster card.
-        loadImageCard(vid, dir, slug, done);
+        // host, missing codec, retries exhausted). Fall back to poster image.
+        const img = vid.closest('[data-globe="img"]')?.querySelector("img") ?? null;
+        loadImageCard(img, dir, slug, done);
       } else {
         done();
       }
@@ -477,12 +477,12 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
     done();
   };
 
-  /** Last-resort card built from the item's poster <img>. Reuses the ALREADY
-   *  loaded DOM image (no second network fetch). Guarded against cross-origin
-   *  images without CORS — sampling those would taint the WebGL canvas and
-   *  kill every draw (SecurityError per render), which is strictly worse. */
+  /** Card built from an item's <img> (poster fallback or image-only item).
+   *  Reuses the ALREADY loaded DOM image (no second network fetch). Guarded
+   *  against cross-origin images without CORS — sampling those would taint
+   *  the WebGL canvas and kill every draw. */
   const loadImageCard = (
-    vid: HTMLVideoElement,
+    imgEl: HTMLImageElement | null,
     dir: THREE.Vector3,
     slug: string,
     done: () => void,
@@ -491,7 +491,7 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
       done();
       return;
     }
-    const img = vid.closest('[data-globe="img"]')?.querySelector("img");
+    const img = imgEl;
     if (!img || !img.getAttribute("src")) {
       done();
       return;
@@ -821,13 +821,13 @@ async function initGlobeReal(wrapEl: HTMLElement, scope: ParentNode) {
         ""
       ).trim();
       if (vid && vid.getAttribute("src")) {
-        // Videos only: the card is created once this video can play (see
-        // loadVideoCard). Items without a playable video are skipped — the
-        // sphere never shows still frames.
         queue.push((done) => loadVideoCard(vid, dir, slug, done, false, 0));
         return;
       }
-      // No video backing this item — skip it (stills don't belong here).
+      // No video: render the poster image as a static card.
+      if (img && img.getAttribute("src")) {
+        queue.push((done) => loadImageCard(img, dir, slug, done));
+      }
     });
     pump();
   }

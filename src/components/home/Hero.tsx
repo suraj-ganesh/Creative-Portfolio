@@ -420,48 +420,48 @@ export default function Hero() {
                 role="list"
                 className="orbit-tiles__list w-dyn-items"
               >
-                {orbitCards.map((card, idx) => (
-                  <div
-                    key={card.title + idx}
-                    data-orbit-tiles-item=""
-                    role={card.videoSrc ? "button" : "listitem"}
-                    tabIndex={card.videoSrc ? 0 : undefined}
-                    aria-label={
-                      card.videoSrc
-                        ? `${card.title} — play video with sound`
-                        : card.title
-                    }
-                    title={
-                      card.videoSrc
-                        ? `${card.title} — click for sound`
-                        : card.title
-                    }
-                    className="orbit-tiles__item w-dyn-item"
-                    style={card.videoSrc ? { cursor: "pointer" } : undefined}
-                    onClick={() => {
-                      if (card.videoSrc) setActiveCard(card);
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        card.videoSrc &&
-                        (e.key === "Enter" || e.key === " ")
-                      ) {
-                        e.preventDefault();
-                        setActiveCard(card);
-                      }
-                    }}
-                  >
+{orbitCards.map((card, idx) => {
+                  const isActive = card.videoSrc || card.mediaType === "poster";
+                  return (
                     <div
-                      className={`demo-card${card.aspect === "16:9" ? " is-landscape" : " is-portrait"}`}
-                      style={{
-                        aspectRatio:
-                          card.aspect === "16:9" ? "16 / 9" : "9 / 16",
+                      key={card.title + idx}
+                      data-orbit-tiles-item=""
+                      role={isActive ? "button" : "listitem"}
+                      tabIndex={isActive ? 0 : undefined}
+                      aria-label={isActive
+                        ? `${card.title} — ${card.mediaType || "video"}`
+                        : card.title
+                      }
+                      title={isActive
+                        ? `${card.title} — click to view`
+                        : card.title
+                      }
+                      className="orbit-tiles__item w-dyn-item"
+                      style={isActive ? { cursor: "pointer" } : undefined}
+                      onClick={() => {
+                        if (isActive) setActiveCard(card);
+                      }}
+                      onKeyDown={(e) => {
+                        if (isActive && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          setActiveCard(card);
+                        }
                       }}
                     >
-                      <OrbitTileMedia card={card} eager={idx === 0} />
+                      <div
+                        className={`demo-card${card.aspect === "16:9" ? " is-landscape" : (card.aspect === "3:4" ? " is-poster" : " is-portrait")}`}
+                        style={{
+                          aspectRatio: card.aspect === "16:9" ? "16 / 9" : (card.aspect === "3:4" ? "3 / 4" : "9 / 16"),
+                        }}
+                      >
+                        <div className={`orbit-tile-type-badge ${card.mediaType || "video"}`}>
+                          {card.mediaType || "video"}
+                        </div>
+                        <OrbitTileMedia card={card} eager={idx === 0} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -470,11 +470,11 @@ export default function Hero() {
 
       {/* Click-for-sound player: unmuted + controls, autoplay allowed
           because the tile click counts as the user gesture. */}
-      {activeCard?.videoSrc && (
+      {activeCard && (activeCard.videoSrc || activeCard.mediaType === "poster") && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`${activeCard.title} — video player`}
+          aria-label={`${activeCard.title} — ${activeCard.mediaType || "video"} viewer`}
           onClick={() => setActiveCard(null)}
           style={{
             position: "fixed",
@@ -493,6 +493,8 @@ export default function Hero() {
               width:
                 activeCard.aspect === "16:9"
                   ? "min(1100px, 92vw)"
+                  : activeCard.aspect === "3:4"
+                  ? "min(600px, 48vw)"
                   : "min(420px, 92vw)",
             }}
           >
@@ -507,10 +509,13 @@ export default function Hero() {
             >
               <div className="p1" style={{ color: "#fff" }}>
                 {activeCard.title}
+                {activeCard.mediaType === "poster" && (
+                  <span style={{ opacity: 0.6, fontSize: "0.8em" }}> — poster</span>
+                )}
               </div>
               <button
                 onClick={() => setActiveCard(null)}
-                aria-label="Close player"
+                aria-label="Close viewer"
                 className="p1"
                 style={{
                   color: "#fff",
@@ -524,24 +529,40 @@ export default function Hero() {
                 Close
               </button>
             </div>
-            <video
-              key={activeCard.videoSrc}
-              src={mediaUrl(activeCard.videoSrc)}
-              poster={activeCard.image}
-              controls
-              autoPlay
-              playsInline
-              preload="auto"
-              style={{
-                width: "100%",
-                maxHeight: "76vh",
-                background: "#000",
-                display: "block",
-                objectFit: "contain",
-                aspectRatio:
-                  activeCard.aspect === "16:9" ? "16 / 9" : "9 / 16",
-              }}
-            />
+            {activeCard.videoSrc ? (
+              <video
+                key={activeCard.videoSrc}
+                src={mediaUrl(activeCard.videoSrc)}
+                poster={activeCard.image}
+                controls
+                autoPlay
+                playsInline
+                preload="auto"
+                style={{
+                  width: "100%",
+                  maxHeight: "76vh",
+                  background: "#000",
+                  display: "block",
+                  objectFit: "contain",
+                  aspectRatio:
+                    activeCard.aspect === "16:9" ? "16 / 9" : "9 / 16",
+                }}
+              />
+            ) : (
+              <img
+                src={activeCard.image}
+                alt={activeCard.title}
+                style={{
+                  width: "100%",
+                  maxHeight: "76vh",
+                  background: "#000",
+                  display: "block",
+                  objectFit: "contain",
+                  aspectRatio:
+                    activeCard.aspect === "16:9" ? "16 / 9" : (activeCard.aspect === "3:4" ? "3 / 4" : "9 / 16"),
+                }}
+              />
+            )}
           </div>
         </div>
       )}

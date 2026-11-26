@@ -416,6 +416,25 @@ html {
 .works-scroll-cue {
   text-align: center;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+@media (min-width: 992px) {
+  /* Overlay is full-screen sticky here — center the cue in the viewport,
+   * exactly between the left "24" and right "26". */
+  .works-scroll-cue {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 991px) {
+  .works-scroll-cue {
+    opacity: 1;
+  }
 }
 
 @media (min-width: 992px) {
@@ -1419,6 +1438,9 @@ body {
 .works-list .works-bento-item.is-landscape .works-item-image-inner {
   aspect-ratio: 16 / 9;
 }
+.works-list .works-bento-item.is-poster .works-item-image-inner {
+  aspect-ratio: 3 / 4;
+}
 .works-list .works-item-image-inner img,
 .works-list .works-item-image-inner video {
   width: 100% !important;
@@ -2031,5 +2053,48 @@ body:has(main[data-page="error-404"]) .mc-lever {
   .hero-lite__tile {
     content-visibility: auto;
     contain-intrinsic-size: auto 320px;
+  }
+}
+
+/** -------------------------------------------------
+ * MEDIA TYPE BADGE - Work Grid & Orbit Tiles
+ * ------------------------------------------------- */
+.works-item-type-badge,
+.orbit-tile-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.works-item-type-badge.video,
+.orbit-tile-type-badge.video {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.works-item-image-inner {
+  position: relative;
+}
+
+.orbit-tiles__item {
+  position: relative;
+}
+
+@media (min-width: 992px) {
+  .demo-card.is-poster {
+    aspect-ratio: 3 / 4;
+    width: clamp(12em, 15vw, 18em);
+  }
+  .hero-lite__tile.is-poster {
+    aspect-ratio: 3 / 4;
   }
 }

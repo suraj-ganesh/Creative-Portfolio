@@ -104,11 +104,15 @@ export default function HeroLite() {
           {defaultOrbitCards.map((card, idx) => (
             <div
               key={card.title + idx}
-              className="hero-lite__tile"
+              className={`hero-lite__tile ${card.mediaType === "poster" ? "is-poster" : ""}`}
               style={{
-                aspectRatio: card.aspect === "16:9" ? "16 / 9" : "9 / 16",
+                aspectRatio: card.aspect === "16:9" ? "16 / 9" : (card.aspect === "3:4" ? "3 / 4" : "9 / 16"),
+                position: "relative",
               }}
             >
+              <div className={`orbit-tile-type-badge ${card.mediaType || "video"}`}>
+                {card.mediaType || "video"}
+              </div>
               <img
                 src={card.image}
                 loading="lazy"
@@ -117,6 +121,7 @@ export default function HeroLite() {
                 sizes="(max-width: 991px) 50vw, 25vw"
                 draggable={false}
                 alt={card.title}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
             </div>
           ))}
