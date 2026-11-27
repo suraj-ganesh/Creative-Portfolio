@@ -141,11 +141,11 @@ table {
 }
 
 /* Initial Visibility & Animations */
-[data-reveal],
-[data-sticky-name="text"],
-[data-preloader],
-[data-prevent-flicker],
-[data-sticky-name] {
+.fx-armed [data-reveal],
+.fx-armed [data-sticky-name="text"],
+.fx-armed [data-preloader],
+.fx-armed [data-prevent-flicker],
+.fx-armed [data-sticky-name] {
   visibility: hidden;
 }
 
@@ -361,7 +361,7 @@ html {
 /** -------------------------------------------------
  * MASKS
  * ------------------------------------------------- */
-.icon-wrap.is-logo {
+.fx-armed .icon-wrap.is-logo {
   visibility: hidden;
 }
 
@@ -697,7 +697,7 @@ html {
   cursor: grab;
   will-change: transform;
 }
-.cg-field[data-pills-js] .cg-pill {
+.fx-armed .cg-field[data-pills-js] .cg-pill {
   position: absolute;
   top: 0;
   left: 0;
@@ -837,10 +837,10 @@ main[data-page="contact"] ~ .sticky-name {
 /** -------------------------------------------------
  * INITIAL LOADER — fullscreen cover + bottom-left 1-100%
  * ------------------------------------------------- */
-/* Fullscreen loading cover shown only on the initial page load while
- * videos buffer (mirrors the bleibtgleich.dev reference). Lives in the
- * root layout so SPA navigations never re-trigger it. Nothing underneath
- * is visible until the counter reaches 100%. */
+/* Fullscreen loading cover shown only on the initial page load (mirrors
+ * the bleibtgleich.dev reference). Lives in the root layout so SPA
+ * navigations never re-trigger it. Nothing underneath is visible until the
+ * counter reaches 100%. */
 .initial-loader {
   position: fixed;
   inset: 0;
@@ -922,6 +922,7 @@ body.is-initial-loading .count {
 .fx-dead [data-parallax],
 .fx-dead [data-featured],
 .fx-dead [m-data-featured="list"],
+.fx-dead .cg-field[data-pills-js] .cg-pill,
 .fx-dead .icon-wrap,
 .fx-dead .split-line,
 .fx-dead .split-char,

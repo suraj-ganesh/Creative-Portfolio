@@ -32,7 +32,7 @@ export function isLoaderDone(): boolean {
   return done;
 }
 
-export function waitForLoaderDone(timeoutMs = 15000): Promise<void> {
+export function waitForLoaderDone(timeoutMs = 5000): Promise<void> {
   if (done) return Promise.resolve();
   return new Promise((resolve) => {
     if (typeof window === "undefined") {

@@ -4,8 +4,7 @@ import { waitForLoaderDone } from "@/lib/loaderGate";
 
 /**
  * First-visit preloader sequence, ported from legacy `initPreloader`.
- * Order: wait for the initial loading cover (InitialLoader 1-100%, videos +
- * window load + webfonts) -> progress bar + brisk 0-100 count (home) ->
+ * Order: wait for the initial loading cover (InitialLoader 1-100%) -> progress bar + brisk 0-100 count (home) ->
  * serial hero cascade: logo morph (via initReveals) -> role line ->
  * location lines -> name/texts (data-reveal-delay) -> menu -> lever ->
  * hides overlay chrome -> starts lenis.
@@ -16,7 +15,7 @@ import { waitForLoaderDone } from "@/lib/loaderGate";
  */
 
 const EXCLUDED_NAMESPACES = new Set(["error-404", "demo"]);
-const MAX_DURATION = 4;
+const MAX_DURATION = 2.5;
 
 let settled = false;
 let pending: Promise<void> | null = null;
@@ -43,8 +42,8 @@ function showStatic(els: Element[]): void {
 
 async function start(): Promise<void> {
   // Never reveal or animate anything until the initial loading cover has
-  // reached 100% (videos buffered, window loaded, fonts ready). Hard
-  // timeout inside the gate so this can never hang the boot sequence.
+  // reached 100%. Hard timeout inside the gate so this can never hang the
+  // boot sequence.
   await waitForLoaderDone();
 
   const hooks = qa("[data-preloader]");
@@ -147,7 +146,7 @@ async function start(): Promise<void> {
     // First visit must always show a real count-up: never rush to 100%
     // faster than this, even on instant window load (production loads so
     // fast the counter would otherwise flash by unseen).
-    const MIN_COUNT_S = 2.4;
+    const MIN_COUNT_S = 1.2;
     const countStartedAt = performance.now();
     const render = () => {
       count.textContent = `${Math.round(state.value)}%`;
@@ -198,10 +197,10 @@ async function start(): Promise<void> {
       // a revealed page with no dead gap in between.
       gsap.delayedCall(isHome ? 0.35 : DUR.S + 0.5 * DUR.STAGGER, done);
     };
-    // Home already waited for window load + videos + fonts behind the
-    // loader gate (which showed its own 1-100%): a brisk fill beat only,
-    // then straight into the cascade — a full second count here reads as
-    // a second loader and leaves a dead gap after the cover lifts.
+    // Home already waited behind the loader gate (which showed its own
+    // 1-100%): a brisk fill beat only, then straight into the cascade — a
+    // full second count here reads as a second loader and leaves a dead gap
+    // after the cover lifts.
     // Other pages keep the legacy load-paced run.
     const HOME_COUNT_S = 0.45;
     let tween: gsap.core.Tween | null = null;

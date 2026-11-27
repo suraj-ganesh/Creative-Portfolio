@@ -488,6 +488,11 @@ export default function SiteFx() {
     const t0 = performance.now();
     const finishBoot = () => {
       if (cancelled) return;
+      try {
+        document.documentElement.classList.add("fx-ready");
+      } catch {
+        /* ignore */
+      }
       fxLog(`preloader resolved in ${Math.round(performance.now() - t0)}ms`);
       readyRef.current = true;
       initPage();

@@ -72,6 +72,9 @@ export default function RootLayout({
             __html: `
               (function () {
                 try {
+                  document.documentElement.classList.add("fx-armed");
+                } catch (e) {}
+                try {
                   var v = sessionStorage.getItem("theme-mode") || "base";
                   var c = { base: "theme-mode-base", 1: "theme-mode-1", 2: "theme-mode-2", 3: "theme-mode-3", 4: "theme-mode-4" }[v] || "theme-mode-base";
                   document.documentElement.classList.add(c);
@@ -87,104 +90,46 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              /* Fail-open kill-switch: if boot JS ever crashes (e.g. a chunk
-                 throws during hydration) the React loader can never dismiss
-                 its own cover, stranding the page behind 100% forever. This
-                 dependency-free poller survives a dead React tree: it removes
-                 the cover and force-reveals staged content (see .fx-dead in
-                 globals.css). Healthy loads release the cover themselves well
-                 before the ceiling, so this never fires for them. */
+              /* Fail-open kill-switch: if boot JS crashes or a chunk never
+                 arrives, the React loader cannot dismiss its own cover. This
+                 dependency-free timer adds .fx-dead so the cover is hidden and
+                 staged content is revealed (see globals.css). Healthy loads
+                 signal .fx-ready from SiteFx and never trip it. */
               (function () {
-                var CEILING_MS = 25000;
-                var STUCK_MS = 8000;
-                var MIN_AGE_MS = 12000;
-                var startedAt = Date.now();
-                var lastValue = null;
-                var lastChange = Date.now();
+                var CEILING_MS = 6000;
+                var ERROR_GRACE_MS = 1200;
                 var done = false;
-                function killCover() {
-                  /* NOTE: never removeChild the loader node here. React still
-                     owns it — yanking it out from under React makes React's
-                     own unmount commit throw NotFoundError (removeChild of a
-                     non-child) and crash the route. Hiding via the .fx-dead
-                     class keeps the node parented so a later React unmount
-                     still succeeds. */
+                var timer = 0;
+                function forceReveal() {
+                  if (done) return;
+                  done = true;
+                  try {
+                    clearTimeout(timer);
+                  } catch (e) {}
+                  /* Never removeChild the loader node: React still owns it. */
                   try {
                     document.documentElement.classList.add("fx-dead");
                   } catch (e) {}
                   try {
                     document.body.classList.remove("is-initial-loading");
                   } catch (e) {}
-                }
-                function forceReveal() {
-                  if (done) return;
-                  done = true;
-                  try {
-                    document.documentElement.classList.add("fx-dead");
-                  } catch (e) {}
-                  killCover();
                   try {
                     window.dispatchEvent(new CustomEvent("lenis:settled"));
                   } catch (e) {}
                 }
-                function currentValue() {
+                function maybeReveal() {
                   try {
-                    var v = document.querySelector(".initial-loader__value");
-                    return v ? v.textContent : null;
-                  } catch (e) {
-                    return null;
-                  }
+                    if (document.documentElement.classList.contains("fx-ready")) return;
+                  } catch (e) {}
+                  forceReveal();
                 }
-                function onCrash() {
-                  if (done) return;
-                  try {
-                    if (!document.querySelector(".initial-loader")) return;
-                    var v = currentValue();
-                    if (v && v.indexOf("100") !== -1) forceReveal();
-                    else if (v !== null && v === lastValue && Date.now() - lastChange > STUCK_MS) forceReveal();
-                  } catch (e) {}
-                }
-                window.addEventListener("error", onCrash);
-                window.addEventListener("unhandledrejection", onCrash);
-                var timer = setInterval(function () {
-                  try {
-                    if (done) {
-                      clearInterval(timer);
-                      return;
-                    }
-                    var now = Date.now();
-                    var loader = document.querySelector(".initial-loader");
-                    if (!loader) {
-                      /* Cover gone but staged hooks never revealed (blank-page
-                         variant) — force them visible past the grace period. */
-                      if (now - startedAt > CEILING_MS + 5000) {
-                        var hooks = document.querySelectorAll("[data-reveal]");
-                        for (var i = 0; i < hooks.length; i++) {
-                          try {
-                            if (window.getComputedStyle(hooks[i]).visibility === "hidden") {
-                              forceReveal();
-                              break;
-                            }
-                          } catch (e) {}
-                        }
-                        clearInterval(timer);
-                      }
-                      return;
-                    }
-                    var v = currentValue();
-                    if (v !== lastValue) {
-                      lastValue = v;
-                      lastChange = now;
-                    }
-                    if (now - startedAt > CEILING_MS) forceReveal();
-                    else if (v !== null && v === lastValue && now - lastChange > STUCK_MS && now - startedAt > MIN_AGE_MS) forceReveal();
-                  } catch (e) {}
-                }, 1000);
-                setTimeout(function () {
-                  try {
-                    clearInterval(timer);
-                  } catch (e) {}
-                }, 60000);
+                window.addEventListener("error", function () {
+                  setTimeout(maybeReveal, ERROR_GRACE_MS);
+                });
+                window.addEventListener("unhandledrejection", function () {
+                  setTimeout(maybeReveal, ERROR_GRACE_MS);
+                });
+                timer = setTimeout(maybeReveal, CEILING_MS);
               })();
             `,
           }}
