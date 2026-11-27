@@ -1,4 +1,4 @@
-import { DUR, gsap, isDesktop, q, qa, fxStatus } from "@/lib/fx/core";
+import { DUR, gsap, isDesktop, isLowPower, q, qa, fxStatus } from "@/lib/fx/core";
 import { lenisStart, lenisStop } from "@/lib/fx/lenis";
 import { waitForLoaderDone } from "@/lib/loaderGate";
 
@@ -86,9 +86,12 @@ async function start(): Promise<void> {
     return;
   }
 
-  // Reduced motion: everything visible instantly, resolve.
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    fxStatus().preloader += " os-reduced-motion";
+  // Reduced motion or low-power devices: everything visible instantly, resolve.
+  if (
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    isLowPower()
+  ) {
+    fxStatus().preloader += " instant";
     gsap.set(progress, {
       visibility: "visible",
       height: "100%",

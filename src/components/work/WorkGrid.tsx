@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Image from "next/image";
 import { projects, projectAspect, type Project } from "@/data/projects";
+import { coverSize } from "@/lib/media";
 import VideoLightbox from "@/components/work/VideoLightbox";
 import ImageLightbox from "@/components/work/ImageLightbox";
 
@@ -29,6 +31,7 @@ export default function WorkGrid() {
     const landscape = projectAspect(project) === "16:9";
     const isPoster = getMediaType(project) === "poster";
     const aspectRatio = isPoster ? POSTER_ASPECT : (landscape ? "16 / 9" : "9 / 16");
+    const size = coverSize(project.coverImage, aspectRatio);
     return (
       <div
         key={project.slug}
@@ -55,8 +58,10 @@ export default function WorkGrid() {
             <div className={`works-item-type-badge ${getMediaType(project)}`}>
               {getMediaType(project)}
             </div>
-            <img
+            <Image
               alt={project.title}
+              width={size.width}
+              height={size.height}
               loading={index < 4 ? "eager" : "lazy"}
               decoding="async"
               sizes="(max-width: 991px) 50vw, (max-width: 1200px) 33vw, 25vw"

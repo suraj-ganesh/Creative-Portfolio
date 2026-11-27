@@ -30,6 +30,32 @@ export const isMobile = (): boolean => {
     return false;
   }
 };
+
+export const isLowPower = (): boolean => {
+  if (typeof window === "undefined" || typeof navigator === "undefined")
+    return false;
+  try {
+    if (window.matchMedia(MOBILE_QUERY).matches) return true;
+    if (window.matchMedia("(pointer: coarse)").matches) return true;
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+      deviceMemory?: number;
+    };
+    if (nav.connection?.saveData) return true;
+    if (
+      nav.connection?.effectiveType &&
+      /2g|3g|slow/.test(nav.connection.effectiveType)
+    )
+      return true;
+    if ((nav.hardwareConcurrency || 8) <= 2) return true;
+    if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2)
+      return true;
+  } catch {
+    return false;
+  }
+  return false;
+};
+
 // Legacy parity: the original bleibtgleich.dev animates unconditionally —
 // its bundle never consults prefers-reduced-motion. Gating on it here made
 // the whole site render static for anyone with the OS "animation effects"

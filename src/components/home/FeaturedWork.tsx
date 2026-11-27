@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { projects } from "@/data/projects";
-import { mediaUrl, rawMediaUrl, MOBILE_VIDEO_TRANSFORM } from "@/lib/media";
+import {
+  coverSize,
+  mediaUrl,
+  rawMediaUrl,
+  MOBILE_VIDEO_TRANSFORM,
+} from "@/lib/media";
 
 export default function FeaturedWork() {
   // Work-only projects (hideFromHome) never appear on the home page.
@@ -62,36 +68,44 @@ export default function FeaturedWork() {
                 role="list"
                 className="globe-database w-dyn-items"
               >
-                {globeProjects.map((p, idx) => (
-                  <div
-                    key={p.slug || idx}
-                    data-globe="img"
-                    role="listitem"
-                    className="globe-database-item w-dyn-item"
-                  >
-                    {p.videoSrc && (
-                      <video
-                        src={mediaUrl(p.videoSrc, {
-                          transform: MOBILE_VIDEO_TRANSFORM,
-                        })}
-                        data-raw={rawMediaUrl(p.videoSrc)}
-                        poster={p.coverImage}
-                        muted
-                        loop
-                        playsInline
-                        preload="none"
-                        crossOrigin="anonymous"
+                {globeProjects.map((p, idx) => {
+                  const size = coverSize(
+                    p.coverImage,
+                    p.mediaType === "poster" ? "3:4" : "9:16",
+                  );
+                  return (
+                    <div
+                      key={p.slug || idx}
+                      data-globe="img"
+                      role="listitem"
+                      className="globe-database-item w-dyn-item"
+                    >
+                      {p.videoSrc && (
+                        <video
+                          src={mediaUrl(p.videoSrc, {
+                            transform: MOBILE_VIDEO_TRANSFORM,
+                          })}
+                          data-raw={rawMediaUrl(p.videoSrc)}
+                          poster={p.coverImage}
+                          muted
+                          loop
+                          playsInline
+                          preload="none"
+                          crossOrigin="anonymous"
+                        />
+                      )}
+                      <Image
+                        src={p.coverImage}
+                        width={size.width}
+                        height={size.height}
+                        loading={isDesktop ? "eager" : "lazy"}
+                        decoding="async"
+                        alt={p.title}
+                        className="img"
                       />
-                    )}
-                    <img
-                      src={p.coverImage}
-                      loading={isDesktop ? "eager" : "lazy"}
-                      decoding="async"
-                      alt={p.title}
-                      className="img"
-                    />
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -128,24 +142,32 @@ export default function FeaturedWork() {
               className="collection-list-wrapper-2 w-dyn-list"
             >
               <div role="list" className="collection-list-2 w-dyn-items">
-                {globeProjects.map((p, idx) => (
-                  <div
-                    key={p.slug || idx}
-                    role="listitem"
-                    className="collection-item-2 w-dyn-item"
-                  >
-                    <img
-                      src={p.coverImage}
-                      loading={idx < 2 ? "eager" : "lazy"}
-                      fetchPriority={idx < 2 ? "high" : "auto"}
-                      decoding="async"
-                      sizes="(max-width: 991px) 78vw, 25vw"
-                      draggable={false}
-                      alt={p.title}
-                      className="img width-auto"
-                    />
-                  </div>
-                ))}
+                {globeProjects.map((p, idx) => {
+                  const size = coverSize(
+                    p.coverImage,
+                    p.mediaType === "poster" ? "3:4" : "9:16",
+                  );
+                  return (
+                    <div
+                      key={p.slug || idx}
+                      role="listitem"
+                      className="collection-item-2 w-dyn-item"
+                    >
+                      <Image
+                        src={p.coverImage}
+                        width={size.width}
+                        height={size.height}
+                        loading={idx < 2 ? "eager" : "lazy"}
+                        fetchPriority={idx < 2 ? "high" : "auto"}
+                        decoding="async"
+                        sizes="(max-width: 991px) 78vw, 25vw"
+                        draggable={false}
+                        alt={p.title}
+                        className="img width-auto"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -61,10 +61,14 @@ function injectCloudinaryTransform(url: string, transform: string): string {
   const marker = "/video/upload/";
   const i = url.indexOf(marker);
   if (i === -1) return url;
-  // Don't double-inject if a transform already present (contains '_' or ',').
+  // Detect only an anchored transform segment; public IDs can contain w_.
   const after = url.slice(i + marker.length);
-  const firstSeg = after.split("/")[0] ?? "";
-  if (/[_ ,]/.test(firstSeg) && /f_|q_|w_|br_/.test(firstSeg)) return url;
+  const token = "[a-z]+_[a-z0-9:.-]+";
+  const alreadyTransformed = new RegExp(
+    `^(?:${token})(?:,${token})*/`,
+    "i",
+  ).test(after);
+  if (alreadyTransformed) return url;
   return `${url.slice(0, i + marker.length)}${transform}/${after}`;
 }
 
@@ -72,6 +76,37 @@ function injectCloudinaryTransform(url: string, transform: string): string {
 export const MOBILE_VIDEO_TRANSFORM = "f_auto,q_auto,w_480,vc_h264,br_700k";
 /** Desktop rendition: still compressed vs raw upload, 720p cap. */
 export const DESKTOP_VIDEO_TRANSFORM = "f_auto,q_auto,w_720,vc_h264,br_1500k";
+
+const POSTER_SIZES: Record<string, { width: number; height: number }> = {
+  "BuddhaJayantiClassmate.webp": { width: 1080, height: 1350 },
+  "BuddhaJayantiPaperflies.webp": { width: 1080, height: 1350 },
+  "CardDesign.webp": { width: 895, height: 1234 },
+  "ChhathFinal.webp": { width: 1080, height: 1350 },
+  "Dashain1.webp": { width: 1080, height: 1350 },
+  "Dashain2.webp": { width: 1080, height: 1350 },
+  "Final_Tihar.webp": { width: 1080, height: 1350 },
+  "Fulpati.webp": { width: 1080, height: 1350 },
+  "LeapBoard1.webp": { width: 1153, height: 1440 },
+  "LeapBoard2.webp": { width: 1153, height: 1440 },
+  "LeapBoard3.webp": { width: 1153, height: 1440 },
+  "LeapBoard4.webp": { width: 1153, height: 1440 },
+  "LeapBoard5.webp": { width: 1153, height: 1440 },
+  "NewYearClassmate.webp": { width: 1080, height: 1350 },
+  "NewYearPaperflies.webp": { width: 1080, height: 1350 },
+  "TiharChattGreetingCard.webp": { width: 2480, height: 1653 },
+};
+
+export function coverSize(
+  src: string,
+  aspect: string = "3:4",
+): { width: number; height: number } {
+  const name = src.split("/").pop() ?? "";
+  const exact = POSTER_SIZES[name];
+  if (exact) return exact;
+  if (/16\s*\/\s*9|16:9/.test(aspect)) return { width: 1920, height: 1080 };
+  if (/9\s*\/\s*16|9:16/.test(aspect)) return { width: 1080, height: 1920 };
+  return { width: 1080, height: 1440 };
+}
 
 export interface MediaUrlOptions {
   /** Force mobile rendition. Defaults to auto-detect via isMobileConnection(). */

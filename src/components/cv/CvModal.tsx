@@ -33,11 +33,9 @@ export default function CvModal({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const download = useCallback(() => {
-    try {
-      downloadCvPdf();
-    } catch (err) {
+    void downloadCvPdf().catch((err) => {
       console.error("[cv] download failed:", err);
-    }
+    });
   }, []);
 
   return createPortal(

@@ -1,4 +1,3 @@
-import { jsPDF } from "jspdf";
 import { cv } from "@/data/cv";
 
 /**
@@ -7,7 +6,8 @@ import { cv } from "@/data/cv";
  * contact details, summary, skills/tools, experience, education and
  * projects — monochrome, A4, selectable text.
  */
-export function downloadCvPdf(): void {
+export async function downloadCvPdf(): Promise<void> {
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const PAGE_W = 595.28;
   const MARGIN = 48;

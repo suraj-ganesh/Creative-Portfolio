@@ -51,7 +51,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Buddha Jayanti Poster",
     image:
-      "/images/posters/BuddhaJayantiPaperflies.png",
+      "/images/posters/BuddhaJayantiPaperflies.webp",
     link: "/works/buddha-jayanti-paperflies",
     mediaType: "poster",
     aspect: "3:4",
@@ -59,7 +59,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Card Design",
     image:
-      "/images/posters/CardDesign.png",
+      "/images/posters/CardDesign.webp",
     link: "/works/card-design",
     mediaType: "poster",
     aspect: "3:4",
@@ -67,7 +67,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Dashain 1",
     image:
-      "/images/posters/Dashain1.png",
+      "/images/posters/Dashain1.webp",
     link: "/works/dashain-1",
     mediaType: "poster",
     aspect: "3:4",
@@ -75,7 +75,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Leap Board 1",
     image:
-      "/images/posters/LeapBoard1.png",
+      "/images/posters/LeapBoard1.webp",
     link: "/works/leap-board-1",
     mediaType: "poster",
     aspect: "3:4",

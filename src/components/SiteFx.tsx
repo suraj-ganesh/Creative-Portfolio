@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isMobile, qa } from "@/lib/fx/core";
+import { gsap, ScrollTrigger, DUR, prefersReduced, fxLog, fxStatus, isLowPower, isMobile, qa } from "@/lib/fx/core";
 import { BUILD_ID } from "@/lib/buildId";
 import {
   initLenis,
@@ -33,7 +33,7 @@ import { initThemeDots } from "@/lib/fx/theme-liquid";
  */
 function isDesktopFx(): boolean {
   try {
-    return window.matchMedia("(min-width: 992px)").matches;
+    return window.matchMedia("(min-width: 992px)").matches && !isLowPower();
   } catch {
     return true;
   }
@@ -156,7 +156,7 @@ function isHomePage(): boolean {
  *  -> lever). Falls back to an instant reveal so staged content can
  *  never strand hidden. */
 function playIntroSafe(): void {
-  if (!isHomePage()) return;
+  if (!isHomePage() || isLowPower()) return;
   try {
     playHeroIntro();
   } catch (err) {
@@ -289,19 +289,12 @@ export default function SiteFx() {
     } catch {
       /* reveal wiring below still applies */
     }
-    // Static work page on phones: unhide everything instantly with zero
-    // ScrollTriggers or scrub timelines — the bento grid just renders, and
-    // every tile stays reachable no matter what animation does.
+    // Low-power fast path: unhide everything instantly with zero
+    // ScrollTriggers or scrub timelines — every tile stays reachable and
+    // the static HeroLite is the intended hero on these devices.
     try {
-      const mobile =
-        window.matchMedia("(max-width: 991px)").matches ||
-        window.matchMedia("(pointer: coarse)").matches;
-      const work =
-        document.querySelector('main[data-page="works"]') !== null;
-      if (mobile && work) {
+      if (isLowPower()) {
         revealNow();
-        // Mobile-only: defer measuring past first paint (same end state,
-        // no layout thrash during commit). Desktop path below untouched.
         try {
           requestAnimationFrame(() => {
             try {
@@ -321,7 +314,7 @@ export default function SiteFx() {
         return;
       }
     } catch {
-      /* matchMedia unavailable — fall through to the animated path */
+      /* detection unavailable — fall through to the animated path */
     }
     pageCleanups.current = [
       safe("reveals", () => initReveals()),
