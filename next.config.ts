@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
   },
+  experimental: {
+    inlineCss: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

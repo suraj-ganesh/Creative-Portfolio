@@ -1919,13 +1919,22 @@ body:has(main[data-page="error-404"]) .mc-lever {
     position: relative;
     top: auto;
   }
+  .initial-loader {
+    animation: fx-fast-loader-out 0.35s linear 0.25s forwards;
+  }
+  @keyframes fx-fast-loader-out {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
   /* Mobile logo morph (PC goo-morph translated to GPU-cheap transforms:
      blob squash → wobble → settle). The mark is a PNG so there's no path
      to morph and no SVG filter is used — squash-and-stretch carries the
      same blob-to-form language. Runs once on load, transform-only. */
   @keyframes hero-lite-mark-morph {
     0% {
-      opacity: 0;
+      opacity: 1;
       transform: scale(1.6, 0.45) rotate(-12deg);
     }
     18% {
@@ -1952,6 +1961,11 @@ body:has(main[data-page="error-404"]) .mc-lever {
   .hero-lite__mark img {
     animation: hero-lite-mark-morph 1.9s var(--ease-out) 0.1s both;
     transform-origin: 50% 50%;
+  }
+  .initial-loader,
+  .initial-loader__cover,
+  .initial-loader__value {
+    transition-duration: 0.2s;
   }
   /* Hold the morph at its first frame while the loading cover is up —
      otherwise the whole sequence plays out invisibly behind it. Runs the

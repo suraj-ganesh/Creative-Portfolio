@@ -15,7 +15,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Draw With Me (part1)",
     image:
-      "/images/posters/social-media-campaign.jpg",
+      "/images/posters/social-media-campaign.webp",
     link: "/works/social-media-campaign",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part1%29.mp4",
     mediaType: "video",
@@ -24,7 +24,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Draw With Me (part2)",
     image:
-      "/images/posters/product-promo-video.jpg",
+      "/images/posters/product-promo-video.webp",
     link: "/works/product-promo-video",
     videoSrc: "/Videos/Draw%20With%20Me%20%28part2%29.mp4",
     mediaType: "video",
@@ -33,7 +33,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Tech Team Intro",
     image:
-      "/images/posters/color-grading-showcase.jpg",
+      "/images/posters/color-grading-showcase.webp",
     link: "/works/color-grading-showcase",
     videoSrc: "/Videos/Tech%20Team%20Intro.mp4",
     mediaType: "video",
@@ -42,7 +42,7 @@ export const defaultOrbitCards: OrbitCard[] = [
   {
     title: "Aastha Paperflies Promo",
     image:
-      "/images/posters/motion-graphics-package.jpg",
+      "/images/posters/motion-graphics-package.webp",
     link: "/works/motion-graphics-package",
     videoSrc: "/Videos/Aastha%20Paperflies%20Promo.mp4",
     mediaType: "video",

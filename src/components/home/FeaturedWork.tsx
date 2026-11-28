@@ -157,8 +157,8 @@ export default function FeaturedWork() {
                         src={p.coverImage}
                         width={size.width}
                         height={size.height}
-                        loading={idx < 2 ? "eager" : "lazy"}
-                        fetchPriority={idx < 2 ? "high" : "auto"}
+                        loading="lazy"
+                        fetchPriority="auto"
                         decoding="async"
                         sizes="(max-width: 991px) 78vw, 25vw"
                         draggable={false}

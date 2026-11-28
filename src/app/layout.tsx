@@ -8,7 +8,7 @@ import CustomScrollbar from "@/components/CustomScrollbar";
 import InitialLoader from "@/components/InitialLoader";
 import CvButton from "@/components/CvButton";
 import { ThemeProvider } from "@/lib/theme";
-import SiteFx from "@/components/SiteFx";
+import SiteFxGate from "@/components/SiteFxGate";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "surajganesh",
     images: [
       {
-        url: "https://surajganesh.com.np/images/posters/color-grading-showcase.jpg",
+        url: "https://surajganesh.com.np/images/posters/color-grading-showcase.webp",
         width: 1200,
         height: 620,
       },
@@ -55,22 +55,37 @@ export default function RootLayout({
   return (
     <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://cdn.prod.website-files.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        {/* Mobile LCP: hero mark is the largest above-fold paint on phones.
-            Preload is paint-only, no visual/layout change on any viewport. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/images/hero-mark.png"
-          fetchPriority="high"
-        />
         <link rel="icon" type="image/png" href="/images/hero-mark-icon.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function () {
+                try {
+                  window.__fxBootAt = performance.now();
+                } catch (e) {}
+                try {
+                  var fast =
+                    window.matchMedia("(max-width: 991px)").matches ||
+                    window.matchMedia("(pointer: coarse)").matches;
+                  window.__fxFastLoader = fast;
+                  if (fast) {
+                    window.__fxFastLoaderReleased = true;
+                    try {
+                      performance.mark("fx-fast-released");
+                    } catch (e) {}
+                    var started = performance.now();
+                    var tick = function () {
+                      var value = document.querySelector(".initial-loader__value");
+                      if (!value) return;
+                      var p = Math.min((performance.now() - started) / 700, 1);
+                      value.textContent = Math.round(1 + 99 * p) + "%";
+                      if (p < 1) window.setTimeout(tick, 100);
+                    };
+                    tick();
+                  }
+                } catch (e) {}
                 try {
                   document.documentElement.classList.add("fx-armed");
                 } catch (e) {}
@@ -171,7 +186,7 @@ export default function RootLayout({
         </div>
         </ThemeProvider>
 
-        <SiteFx />
+        <SiteFxGate />
       </body>
     </html>
   );

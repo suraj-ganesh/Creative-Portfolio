@@ -23,9 +23,9 @@ import { notifyLoaderDone } from "@/lib/loaderGate";
 const MIN_DISPLAY_MS = 1200;
 const MAX_WAIT_MS = 2200;
 const FORCE_RELEASE_MS = 3200;
-const MOBILE_MIN_DISPLAY_MS = 700;
-const MOBILE_MAX_WAIT_MS = 1400;
-const MOBILE_FORCE_RELEASE_MS = 2200;
+const MOBILE_MIN_DISPLAY_MS = 500;
+const MOBILE_MAX_WAIT_MS = 800;
+const MOBILE_FORCE_RELEASE_MS = 1400;
 
 function isMobileFastPath(): boolean {
   try {
@@ -50,7 +50,17 @@ export default function InitialLoader() {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    const startedAt = performance.now();
+    const flags = window as Window & {
+      __fxBootAt?: number;
+      __fxFastLoaderReleased?: boolean;
+    };
+    if (flags.__fxFastLoaderReleased) {
+      setGone(true);
+      return;
+    }
+    const bootAt = flags.__fxBootAt;
+    const startedAt =
+      typeof bootAt === "number" && bootAt >= 0 ? bootAt : performance.now();
     const fastPath = isMobileFastPath();
     const minDisplayMs = fastPath ? MOBILE_MIN_DISPLAY_MS : MIN_DISPLAY_MS;
     const maxWaitMs = fastPath ? MOBILE_MAX_WAIT_MS : MAX_WAIT_MS;
@@ -112,7 +122,8 @@ export default function InitialLoader() {
           ? 100
           : 1 + 89 * Math.min(elapsed / minDisplayMs, 1);
 
-      displayed += Math.max((target - displayed) * 0.12, 0.5);
+      if (fastPath && target === 100) displayed = 100;
+      else displayed += Math.max((target - displayed) * 0.12, 0.5);
       if (target < 100 && displayed > 99) displayed = 99;
       if (target === 100 && displayed >= 99.4) displayed = 100;
 
@@ -133,6 +144,10 @@ export default function InitialLoader() {
           setLeaving(true);
           window.setTimeout(() => {
             if (disposed) return;
+            if (fastPath) {
+              release();
+              return;
+            }
             if (settled) {
               release();
             } else {
@@ -146,8 +161,8 @@ export default function InitialLoader() {
                 { once: true },
               );
             }
-          }, 450);
-        }, 150);
+          }, fastPath ? 300 : 450);
+        }, fastPath ? 0 : 150);
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -181,9 +196,12 @@ export default function InitialLoader() {
     <div
       aria-hidden="true"
       className={`initial-loader${leaving ? " is-leaving" : ""}`}
+      suppressHydrationWarning
     >
       <div className="initial-loader__cover" />
-      <span className="initial-loader__value">{value}%</span>
+      <span className="initial-loader__value" suppressHydrationWarning>
+        {value}%
+      </span>
     </div>
   );
 }
