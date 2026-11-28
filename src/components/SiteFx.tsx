@@ -296,6 +296,11 @@ export default function SiteFx() {
       if (isLowPower()) {
         revealNow();
         try {
+          lenisStart();
+        } catch {
+          /* ignore */
+        }
+        try {
           requestAnimationFrame(() => {
             try {
               ScrollTrigger.refresh();
@@ -352,6 +357,18 @@ export default function SiteFx() {
           }
         });
       }
+    }
+    // Always restart Lenis on page init. The smooth-scroll engine is
+    // stopped on every navigation (SiteFx link handler) and only
+    // restarted inside `enter()` after the fade-in animation — if that
+    // chain is interrupted (interrupted navigation, boot not yet ready,
+    // killed tween), Lenis stays stopped and the page won't scroll.
+    // Starting it here guarantees scroll works on first load and after
+    // every route change regardless of animation state.
+    try {
+      lenisStart();
+    } catch {
+      /* ignore */
     }
     lenisResize();
     ScrollTrigger.refresh();
@@ -529,6 +546,11 @@ export default function SiteFx() {
       scrollTopImmediate();
       try {
         initPage();
+      } catch {
+        /* ignore */
+      }
+      try {
+        lenisStart();
       } catch {
         /* ignore */
       }

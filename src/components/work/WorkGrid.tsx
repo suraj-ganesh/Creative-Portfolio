@@ -62,7 +62,7 @@ export default function WorkGrid() {
               alt={project.title}
               width={size.width}
               height={size.height}
-              loading={index < 4 ? "eager" : "lazy"}
+              loading={index < 12 ? "eager" : "lazy"}
               decoding="async"
               sizes="(max-width: 991px) 50vw, (max-width: 1200px) 33vw, 25vw"
               src={project.coverImage}
